@@ -81,6 +81,10 @@ fun StudentContent(
 ) {
     var isScanning by remember { mutableStateOf(false) }
     var showDepositDialog by remember { mutableStateOf(false) }
+    var showNotificationsDialog by remember { mutableStateOf(false) }
+    var showQuickActionsDialog by remember { mutableStateOf(false) }
+    var showAllTransactionsDialog by remember { mutableStateOf(false) }
+
     val balanceKsh = wallet?.let { it.balanceInCents / 100.0 } ?: 0.0
 
     val initials = remember(studentKyc?.studentName) {
@@ -107,7 +111,8 @@ fun StudentContent(
             ) {
                 StudentHeader(
                     initials = initials,
-                    onProfileClick = onProfileClick
+                    onProfileClick = onProfileClick,
+                    onNotificationClick = { showNotificationsDialog = true }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -115,7 +120,8 @@ fun StudentContent(
                 BalanceCard(
                     balance = String.format(Locale.getDefault(), "KSh %,.2f", balanceKsh),
                     onDepositClick = { showDepositDialog = true },
-                    onRefreshClick = onRefresh
+                    onRefreshClick = onRefresh,
+                    onMoreClick = { showQuickActionsDialog = true }
                 )
 
                 SecurityInfoBar()
@@ -127,7 +133,8 @@ fun StudentContent(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 RecentActivitySection(
-                    transactions = transactions
+                    transactions = transactions,
+                    onSeeAllClick = { showAllTransactionsDialog = true }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -149,6 +156,37 @@ fun StudentContent(
                     showDepositDialog = false
                     onDeposit(amount, phone)
                 }
+            )
+        }
+
+        if (showNotificationsDialog) {
+            NotificationsDialog(
+                onDismiss = { showNotificationsDialog = false }
+            )
+        }
+
+        if (showQuickActionsDialog) {
+            WalletQuickActionsDialog(
+                onDepositClick = {
+                    showQuickActionsDialog = false
+                    showDepositDialog = true
+                },
+                onRefreshClick = {
+                    showQuickActionsDialog = false
+                    onRefresh()
+                },
+                onProfileClick = {
+                    showQuickActionsDialog = false
+                    onProfileClick()
+                },
+                onDismiss = { showQuickActionsDialog = false }
+            )
+        }
+
+        if (showAllTransactionsDialog) {
+            AllTransactionsDialog(
+                transactions = transactions,
+                onDismiss = { showAllTransactionsDialog = false }
             )
         }
 
@@ -178,7 +216,8 @@ fun StudentContent(
 fun StudentHeader(
     modifier: Modifier = Modifier,
     initials: String = "JD",
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {}
 ) {
     Row(
         modifier = modifier
@@ -214,12 +253,14 @@ fun StudentHeader(
             color = Color(0xFF006D3E)
         )
 
-        Icon(
-            painter = painterResource(id = R.drawable.ic_notifications),
-            contentDescription = null,
-            tint = Color.Gray,
-            modifier = Modifier.size(24.dp)
-        )
+        IconButton(onClick = onNotificationClick) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_notifications),
+                contentDescription = "Notifications",
+                tint = Color.Gray,
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
 
@@ -228,7 +269,8 @@ fun BalanceCard(
     balance: String,
     modifier: Modifier = Modifier,
     onDepositClick: () -> Unit = {},
-    onRefreshClick: () -> Unit = {}
+    onRefreshClick: () -> Unit = {},
+    onMoreClick: () -> Unit = {}
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -308,14 +350,16 @@ fun BalanceCard(
                 }
 
                 Surface(
-                    modifier = Modifier.size(48.dp),
-                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onMoreClick),
                     color = Color(0xFF006D3E)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_more_horiz),
-                            contentDescription = null,
+                            contentDescription = "More Options",
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
@@ -360,6 +404,7 @@ fun SecurityInfoBar(modifier: Modifier = Modifier) {
 @Composable
 fun RecentActivitySection(
     transactions: List<Transaction>,
+    onSeeAllClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -373,7 +418,7 @@ fun RecentActivitySection(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
-            TextButton(onClick = { /* TODO */ }) {
+            TextButton(onClick = onSeeAllClick) {
                 Text(
                     text = stringResource(R.string.see_all),
                     color = Color(0xFF006D3E),
@@ -595,6 +640,206 @@ fun DepositDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel", color = Color.Gray)
+            }
+        }
+    )
+}
+
+@Composable
+fun NotificationsDialog(
+    onDismiss: () -> Unit
+) {
+    val sampleNotifications = listOf(
+        Triple("M-Pesa Top Up Received", "KSh 1,000 deposited to student wallet.", "10m ago"),
+        Triple("Vendor Discount Applied", "15% student discount processed at Campus Cafe.", "2h ago"),
+        Triple("Allowance Verified", "Daily food allowance verified by Campus Admin.", "1d ago")
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Campus Alerts", fontWeight = FontWeight.Bold)
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_notifications),
+                    contentDescription = null,
+                    tint = Color(0xFF006D3E),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                sampleNotifications.forEach { (title, subtitle, time) ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF8F9FB),
+                        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1A1C1E))
+                                Text(time, fontSize = 11.sp, color = Color.Gray)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(subtitle, fontSize = 12.sp, color = Color.Gray)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+            ) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+@Composable
+fun WalletQuickActionsDialog(
+    onDepositClick: () -> Unit,
+    onRefreshClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Wallet Actions", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onDepositClick() },
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFE8F5E9)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = null, tint = Color(0xFF006D3E))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Deposit via M-Pesa", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF006D3E))
+                            Text("Top up student wallet instantly", fontSize = 12.sp, color = Color.Gray)
+                        }
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onRefreshClick() },
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF8F9FB),
+                    border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(painter = painterResource(id = R.drawable.ic_refresh), contentDescription = null, tint = Color.DarkGray)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Refresh Wallet Balance", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text("Sync latest transactions", fontSize = 12.sp, color = Color.Gray)
+                        }
+                    }
+                }
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onProfileClick() },
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFF8F9FB),
+                    border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(painter = painterResource(id = R.drawable.ic_security), contentDescription = null, tint = Color.DarkGray)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Wallet Security & Profile", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text("Manage credentials and limits", fontSize = 12.sp, color = Color.Gray)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color.Gray)
+            }
+        }
+    )
+}
+
+@Composable
+fun AllTransactionsDialog(
+    transactions: List<Transaction>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Transaction Ledger", fontWeight = FontWeight.Bold)
+                Text("${transactions.size} Total", fontSize = 12.sp, color = Color.Gray)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (transactions.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        Text("No transaction history available.", color = Color.Gray)
+                    }
+                } else {
+                    transactions.forEach { tx ->
+                        TransactionItem(transaction = tx)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+            ) {
+                Text("Close")
             }
         }
     )
