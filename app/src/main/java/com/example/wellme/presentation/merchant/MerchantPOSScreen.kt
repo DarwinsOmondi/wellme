@@ -32,6 +32,7 @@ import com.example.wellme.R
 import com.example.wellme.domain.model.MerchantItem
 import com.example.wellme.theme.WellMeTheme
 import java.util.Locale
+import androidx.core.net.toUri
 
 @Composable
 fun MerchantPOSScreen(
@@ -43,15 +44,23 @@ fun MerchantPOSScreen(
     val inventory by viewModel.inventory.collectAsState()
     val cart by viewModel.cart.collectAsState()
     val total by viewModel.totalPrice.collectAsState()
+    val qrDialogAmount by viewModel.qrDialogAmount.collectAsState()
     
     var isScanningCustomer by remember { mutableStateOf(false) }
+
+    qrDialogAmount?.let { amount ->
+        MerchantQrPaymentDialog(
+            amount = amount,
+            onDismiss = { viewModel.dismissQrDialog() }
+        )
+    }
 
     if (isScanningCustomer) {
         com.example.wellme.presentation.common.ScannerOverlay(
             onClose = { isScanningCustomer = false },
             onScan = { data, _ -> // Ignoring simulated long for now
                 try {
-                    val uri = android.net.Uri.parse(data)
+                    val uri = data.toUri()
                     // Format: wellme_pay://student_id?amount=100
                     val studentId = uri.host ?: ""
                     val amount = uri.getQueryParameter("amount")?.toDoubleOrNull() ?: 0.0
@@ -207,10 +216,81 @@ fun MerchantPOSHeader(onProfileClick: () -> Unit) {
             color = Color(0xFF006D3E)
         )
 
-        IconButton(onClick = { /* Settings */ }) {
+        IconButton(onClick = onProfileClick) {
             Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.Gray, modifier = Modifier.size(28.dp))
         }
     }
+}
+
+@Composable
+fun MerchantQrPaymentDialog(
+    amount: Double,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Customer Checkout QR",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    color = Color(0xFF006D3E)
+                )
+                Text(
+                    text = String.format(Locale.getDefault(), "KSh %,.2f", amount),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 28.sp,
+                    color = Color(0xFF1A1C1E),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                Surface(
+                    modifier = Modifier.size(200.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp
+                ) {
+                    Box(modifier = Modifier.padding(16.dp)) {
+                        com.example.wellme.presentation.common.QrCodeWidget(
+                            seed = amount.toInt(),
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Ask student to scan this QR code using their WellMe app to process payment.",
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+            ) {
+                Text("Done", fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
 
 @Composable
