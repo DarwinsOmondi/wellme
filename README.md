@@ -1,12 +1,12 @@
-# WellMe 🌿
+# WellMe
 
 **WellMe** is a modern Android application designed as a smart campus digital wallet and merchant marketplace ecosystem. It bridges the gap between university students and campus merchants by offering seamless contactless payments, wallet top-ups via M-Pesa, merchant discovery, point-of-sale (POS) processing, and inventory management.
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-### 🎓 Student Portal
+### Student Portal
 - **Secure Authentication & Onboarding**: Email/OTP login with campus email verification and KYC identity confirmation.
 - **Digital Student Wallet**: Real-time balance tracking, daily allowance management, and transaction history.
 - **M-Pesa STK Push Integration**: Direct, instant wallet funding and payment initiation powered by M-Pesa.
@@ -14,7 +14,7 @@
 - **Campus Discovery**: Browse nearby student-friendly merchants, cafes, and campus stores, and view item catalogs.
 - **Account Settings**: Manage personal details, profile picture, security preferences, and notification options.
 
-### 🏪 Merchant Portal
+### Merchant Portal
 - **Streamlined Merchant Onboarding**: Simple registration for campus businesses with legal documentation and financial settlement configuration (M-Pesa Till / Paybill / Bank account).
 - **Point of Sale (POS)**: Accept payments instantly via dynamic QR code scanning and direct student wallet transfers.
 - **Inventory Management**: Add and manage store items with product titles, pricing, categories, stock levels, and image uploads.
@@ -22,7 +22,7 @@
 
 ---
 
-## 🏗 Tech Stack & Architecture
+## Tech Stack & Architecture
 
 - **Language**: [Kotlin](https://kotlinlang.org/) 2.0+
 - **UI Framework**: [Jetpack Compose](https://developer.android.com/jetpack/compose) with Material Design 3 (`androidx.compose.material3`)
@@ -36,7 +36,7 @@
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 app/src/main/java/com/example/wellme/
@@ -62,7 +62,7 @@ app/src/main/java/com/example/wellme/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - **Android Studio**: Ladybug (2024.2.1) or newer recommended
@@ -102,7 +102,7 @@ mpesa.callback.url=https://YOUR_CALLBACK_URL
 
 ---
 
-## 🧪 Testing
+## Testing
 
 To execute unit tests:
 ```bash
@@ -115,7 +115,3 @@ To run instrumented UI tests:
 ```
 
 ---
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
