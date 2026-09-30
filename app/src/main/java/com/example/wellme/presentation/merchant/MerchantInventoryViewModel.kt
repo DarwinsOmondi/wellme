@@ -79,8 +79,18 @@ class MerchantInventoryViewModel @Inject constructor(
         }
     }
 
+    // --- QR Code Dialog State ---
+    private val _qrDialogAmount = MutableStateFlow<Double?>(null)
+    val qrDialogAmount = _qrDialogAmount.asStateFlow()
+
     fun generateQr(total: Double) {
-        // Mock QR generation logic
-        // In a real app, this might navigate to a QR Display screen
+        if (total > 0) {
+            _qrDialogAmount.value = total
+        }
+    }
+
+    fun dismissQrDialog() {
+        _qrDialogAmount.value = null
+        clearCart()
     }
 }

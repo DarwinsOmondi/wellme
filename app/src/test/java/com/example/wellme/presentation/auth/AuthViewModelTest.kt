@@ -22,11 +22,12 @@ class AuthViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var viewModel: AuthViewModel
     private val repository: AuthRepository = mock()
+    private val kycRepository: com.example.wellme.domain.repository.KycRepository = mock()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = AuthViewModel(repository)
+        viewModel = AuthViewModel(repository, kycRepository)
     }
 
     @After

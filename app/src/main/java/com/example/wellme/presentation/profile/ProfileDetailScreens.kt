@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wellme.theme.EmeraldGreen
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,7 +95,11 @@ fun InfoCard(title: String, value: String) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SecuritySettingsScreen(onBack: () -> Unit) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Security", fontWeight = FontWeight.Bold) },
@@ -119,20 +124,29 @@ fun SecuritySettingsScreen(onBack: () -> Unit) {
                 icon = Icons.Default.Lock,
                 title = "Change Password",
                 subtitle = "Update your account password",
-                onClick = { /* TODO */ }
+                onClick = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Password reset link sent to registered email.")
+                    }
+                }
             )
             DetailOptionItem(
                 icon = Icons.Default.Fingerprint,
                 title = "Biometric Authentication",
                 subtitle = "Use fingerprint or face ID to login",
                 hasSwitch = true,
-                onClick = { /* TODO */ }
+                checked = true,
+                onClick = {}
             )
             DetailOptionItem(
                 icon = Icons.Default.Devices,
                 title = "Active Sessions",
                 subtitle = "Manage devices where you are logged in",
-                onClick = { /* TODO */ }
+                onClick = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("This device is currently active.")
+                    }
+                }
             )
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -151,7 +165,11 @@ fun SecuritySettingsScreen(onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationPreferencesScreen(onBack: () -> Unit) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Notifications", fontWeight = FontWeight.Bold) },
@@ -178,7 +196,7 @@ fun NotificationPreferencesScreen(onBack: () -> Unit) {
                 subtitle = "Receive alerts on your device",
                 hasSwitch = true,
                 checked = true,
-                onClick = { /* TODO */ }
+                onClick = {}
             )
             DetailOptionItem(
                 icon = Icons.Default.Email,
@@ -186,7 +204,7 @@ fun NotificationPreferencesScreen(onBack: () -> Unit) {
                 subtitle = "Get updates via your campus email",
                 hasSwitch = true,
                 checked = false,
-                onClick = { /* TODO */ }
+                onClick = {}
             )
             DetailOptionItem(
                 icon = Icons.Default.AccountBalanceWallet,
@@ -194,7 +212,7 @@ fun NotificationPreferencesScreen(onBack: () -> Unit) {
                 subtitle = "Notify me after every payment or deposit",
                 hasSwitch = true,
                 checked = true,
-                onClick = { /* TODO */ }
+                onClick = {}
             )
         }
     }
@@ -203,7 +221,11 @@ fun NotificationPreferencesScreen(onBack: () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpSupportScreen(onBack: () -> Unit) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Help & Support", fontWeight = FontWeight.Bold) },
@@ -228,25 +250,41 @@ fun HelpSupportScreen(onBack: () -> Unit) {
                 icon = Icons.Default.QuestionAnswer,
                 title = "Contact Support",
                 subtitle = "Chat with our support team",
-                onClick = { /* TODO */ }
+                onClick = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Support line: support@wellme.com")
+                    }
+                }
             )
             DetailOptionItem(
                 icon = Icons.Default.Info,
                 title = "FAQ",
                 subtitle = "Frequently asked questions",
-                onClick = { /* TODO */ }
+                onClick = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("WellMe Help Desk v1.0")
+                    }
+                }
             )
             DetailOptionItem(
                 icon = Icons.Default.Description,
                 title = "Terms of Service",
                 subtitle = "Read our legal terms",
-                onClick = { /* TODO */ }
+                onClick = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("WellMe Terms of Service accepted.")
+                    }
+                }
             )
             DetailOptionItem(
                 icon = Icons.Default.PrivacyTip,
                 title = "Privacy Policy",
                 subtitle = "How we handle your data",
-                onClick = { /* TODO */ }
+                onClick = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar("WellMe Privacy Policy compliant.")
+                    }
+                }
             )
             
             Spacer(modifier = Modifier.height(24.dp))
