@@ -151,7 +151,14 @@ fun MainNavigation() {
                     StudentScreen(
                         viewModel = viewModel,
                         onProfileClick = { backStack.add(Profile) },
-                        onDiscoverClick = { backStack.add(StudentDiscover) }
+                        onDiscoverClick = { backStack.add(StudentDiscover) },
+                        onNotificationClick = { backStack.add(Notifications) }
+                    )
+                }
+
+                entry<Notifications> {
+                    com.example.wellme.presentation.notifications.NotificationsScreen(
+                        onBack = { backStack.removeLastOrNull() }
                     )
                 }
 

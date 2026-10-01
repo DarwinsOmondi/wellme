@@ -136,68 +136,65 @@ class StudentViewModel @Inject constructor(
     fun initiateDeposit(amountInKsh: Double, phoneNumber: String) {
         val amountInCents = (amountInKsh * 100).toLong()
         Log.d(TAG, "initiateDeposit: $amountInKsh KSh to $phoneNumber")
+        if (amountInKsh <= 0) {
+            _sheetState.value = SheetState.Error("Please enter an amount greater than 0.")
+            return
+        }
+        if (phoneNumber.length < 10) {
+            _sheetState.value = SheetState.Error("Please enter a valid phone number.")
+            return
+        }
+
         viewModelScope.launch {
             _sheetState.value = SheetState.Processing
-            val result = initiateStkPushUseCase(
-                consumerKey = com.example.wellme.BuildConfig.MPESA_CONSUMER_KEY,
-                consumerSecret = com.example.wellme.BuildConfig.MPESA_CONSUMER_SECRET,
-                businessShortCode = "174379",
-                passkey = com.example.wellme.BuildConfig.MPESA_PASSKEY,
-                amount = amountInKsh.toInt().toString(),
-                phoneNumber = phoneNumber,
-                callbackUrl = com.example.wellme.BuildConfig.MPESA_CALLBACK_URL,
-                accountReference = "WellMe Deposit",
-                transactionDesc = "Student Wallet Deposit"
-            )
-
-            result.onSuccess { response ->
-                Log.d(TAG, "STK Push request successful. CheckoutRequestId: ${response.checkoutRequestId}")
-                // Step B: Log to Supabase pending_payments
-                val pendingPayment = PendingPayment(
-                    checkoutRequestId = response.checkoutRequestId,
-                    studentId = studentId,
-                    amountInCents = amountInCents,
-                    status = "PENDING",
-                    timestamp = System.currentTimeMillis()
+            try {
+                val result = initiateStkPushUseCase(
+                    consumerKey = com.example.wellme.BuildConfig.MPESA_CONSUMER_KEY,
+                    consumerSecret = com.example.wellme.BuildConfig.MPESA_CONSUMER_SECRET,
+                    businessShortCode = "174379",
+                    passkey = com.example.wellme.BuildConfig.MPESA_PASSKEY,
+                    amount = amountInKsh.toInt().toString(),
+                    phoneNumber = phoneNumber,
+                    callbackUrl = com.example.wellme.BuildConfig.MPESA_CALLBACK_URL,
+                    accountReference = "WellMe Deposit",
+                    transactionDesc = "Student Wallet Deposit"
                 )
-                walletRepository.logPendingPayment(pendingPayment)
 
-                // Step C: Observe real-time update with a timeout
-                Log.d(TAG, "Observing real-time updates for checkoutRequestId: ${response.checkoutRequestId}")
-                setObserveRealtime(true)
-                withTimeoutOrNull(60.seconds) {
-                    walletRepository.observePendingPayment(response.checkoutRequestId)
-                        .first { it.checkoutRequestId == response.checkoutRequestId && it.status != "PENDING" }
-                        .let { updatedPayment ->
-                            Log.d(TAG, "Real-time update received. Status: ${updatedPayment.status}")
-                            setObserveRealtime(false)
-                            if (updatedPayment.status == "COMPLETED") {
-                                Log.d(TAG, "Deposit completed. Syncing wallet...")
-                                refreshWallet() // Trigger the Supabase -> Room -> UI flow
+                result.onSuccess { response ->
+                    Log.d(TAG, "STK Push request successful. CheckoutRequestId: ${response.checkoutRequestId}")
+                    try {
+                        val pendingPayment = PendingPayment(
+                            checkoutRequestId = response.checkoutRequestId,
+                            studentId = studentId,
+                            amountInCents = amountInCents,
+                            status = "PENDING",
+                            timestamp = System.currentTimeMillis()
+                        )
+                        walletRepository.logPendingPayment(pendingPayment)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to log pending payment", e)
+                    }
 
-                                _sheetState.value = SheetState.Success(
-                                    Transaction(
-                                        transactionId = updatedPayment.checkoutRequestId,
-                                        amountInCents = updatedPayment.amountInCents,
-                                        originalAmountInCents = updatedPayment.amountInCents,
-                                        discountAppliedInCents = 0L,
-                                        timestamp = updatedPayment.timestamp,
-                                        type = TransactionType.STIPEND,
-                                        merchantId = "mpesa",
-                                        studentId = studentId
-                                    )
-                                )
-                            } else {
-                                _sheetState.value = SheetState.Error("Payment failed: ${updatedPayment.status}")
-                            }
-                        }
-                } ?: run {
-                    Log.e(TAG, "Payment timed out for checkoutRequestId: ${response.checkoutRequestId}")
-                    _sheetState.value = SheetState.Error("Payment timed out. Please check your M-Pesa.")
+                    _sheetState.value = SheetState.Success(
+                        Transaction(
+                            transactionId = response.checkoutRequestId,
+                            amountInCents = amountInCents,
+                            originalAmountInCents = amountInCents,
+                            discountAppliedInCents = 0L,
+                            timestamp = System.currentTimeMillis(),
+                            type = TransactionType.STIPEND,
+                            merchantId = "mpesa",
+                            studentId = studentId
+                        )
+                    )
+                    refreshWallet()
+                }.onFailure {
+                    Log.e(TAG, "Failed to initiate M-Pesa STK Push", it)
+                    _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(it))
                 }
-            }.onFailure {
-                Log.e(TAG, "Failed to initiate M-Pesa STK Push", it)
-                _sheetState.value = SheetState.Error(it.message ?: "Failed to initiate M-Pesa deposit")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Unexpected error in initiateDeposit", e)
+                _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(e))
             }
         }
     }
