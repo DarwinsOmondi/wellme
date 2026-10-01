@@ -30,6 +30,7 @@ import kotlinx.serialization.Serializable
 // Merchant Inventory
 @Serializable data object AddInventoryItem : NavKey
 
-// Student Discover
+// Student Discover & Notifications
 @Serializable data object StudentDiscover : NavKey
 @Serializable data class StudentMerchantDetail(val merchantId: String) : NavKey
+@Serializable data object Notifications : NavKey

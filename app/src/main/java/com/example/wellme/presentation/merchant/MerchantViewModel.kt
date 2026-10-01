@@ -59,19 +59,26 @@ class MerchantViewModel @Inject constructor(
     fun submitCapitalRequest() {
         val amount = amountInput.toDoubleOrNull() ?: 0.0
         if (amount <= 0) {
-            viewModelScope.launch { _uiEvent.emit(UiEvent.ShowSnackbar("Please enter a valid amount")) }
+            viewModelScope.launch { _uiEvent.emit(UiEvent.ShowSnackbar("Please enter a valid funding amount")) }
             return
         }
 
         viewModelScope.launch {
             loanState = LoanLifecycleState.SubmittingRpc
-            requestLoanUseCase.execute(merchantId, amount).collect { state ->
-                loanState = state
-                if (state is LoanLifecycleState.OperationalError) {
-                    _uiEvent.emit(UiEvent.ShowSnackbar(state.message))
-                } else if (state is LoanLifecycleState.DisbursedSuccess) {
-                    _uiEvent.emit(UiEvent.ShowSnackbar("Safaricom loan disbursed successfully!"))
+            try {
+                requestLoanUseCase.execute(merchantId, amount).collect { state ->
+                    loanState = state
+                    if (state is LoanLifecycleState.OperationalError) {
+                        _uiEvent.emit(UiEvent.ShowSnackbar(state.message))
+                    } else if (state is LoanLifecycleState.DisbursedSuccess) {
+                        _uiEvent.emit(UiEvent.ShowSnackbar("Funding request processed successfully!"))
+                    }
                 }
+            } catch (e: Throwable) {
+                android.util.Log.e("MerchantViewModel", "Failed to submit funding request", e)
+                val msg = ErrorMapper.getUserFriendlyMessage(e)
+                loanState = LoanLifecycleState.OperationalError(msg)
+                _uiEvent.emit(UiEvent.ShowSnackbar(msg))
             }
         }
     }

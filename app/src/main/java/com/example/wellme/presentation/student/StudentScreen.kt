@@ -40,7 +40,8 @@ fun StudentScreen(
     viewModel: StudentViewModel,
     modifier: Modifier = Modifier,
     onProfileClick: () -> Unit = {},
-    onDiscoverClick: () -> Unit = {}
+    onDiscoverClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {}
 ) {
     val wallet by viewModel.wallet.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
@@ -59,6 +60,7 @@ fun StudentScreen(
         onRefresh = { viewModel.refreshWallet() },
         onProfileClick = onProfileClick,
         onDiscoverClick = onDiscoverClick,
+        onNotificationClick = onNotificationClick,
         modifier = modifier
     )
 }
@@ -77,6 +79,7 @@ fun StudentContent(
     onRefresh: () -> Unit,
     onProfileClick: () -> Unit = {},
     onDiscoverClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var isScanning by remember { mutableStateOf(false) }
@@ -112,7 +115,7 @@ fun StudentContent(
                 StudentHeader(
                     initials = initials,
                     onProfileClick = onProfileClick,
-                    onNotificationClick = { showNotificationsDialog = true }
+                    onNotificationClick = onNotificationClick
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
