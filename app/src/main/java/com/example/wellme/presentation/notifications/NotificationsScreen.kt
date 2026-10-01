@@ -1,7 +1,6 @@
 package com.example.wellme.presentation.notifications
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,14 +14,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.wellme.R
+import com.example.wellme.domain.model.Transaction
+import com.example.wellme.domain.model.TransactionType
+import com.example.wellme.presentation.student.StudentViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 data class CampusNotification(
     val id: String,
@@ -40,43 +43,32 @@ enum class NotificationType {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsScreen(
+    viewModel: StudentViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
-    var notificationsList by remember {
-        mutableStateOf(
-            listOf(
+    val dbTransactions by viewModel.transactions.collectAsState()
+    val dateFormat = remember { SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()) }
+
+    var dismissedIds by remember { mutableStateOf(setOf<String>()) }
+    var readIds by remember { mutableStateOf(setOf<String>()) }
+
+    val notificationsList = remember(dbTransactions, dismissedIds, readIds) {
+        dbTransactions
+            .filter { it.transactionId !in dismissedIds }
+            .map { tx ->
+                val isTopUp = tx.type == TransactionType.STIPEND || tx.merchantId == "mpesa"
                 CampusNotification(
-                    id = "1",
-                    title = "M-Pesa Top Up Received",
-                    subtitle = "KSh 1,000 deposited to your student wallet successfully.",
-                    timestamp = "10m ago",
-                    type = NotificationType.TOP_UP
-                ),
-                CampusNotification(
-                    id = "2",
-                    title = "Vendor Discount Applied",
-                    subtitle = "15% student discount (KSh 75) processed at Campus Cafe.",
-                    timestamp = "2h ago",
-                    type = NotificationType.DISCOUNT
-                ),
-                CampusNotification(
-                    id = "3",
-                    title = "Allowance Verified",
-                    subtitle = "Daily food allowance verified by Campus Admin.",
-                    timestamp = "1d ago",
-                    type = NotificationType.ALLOWANCE,
-                    isRead = true
-                ),
-                CampusNotification(
-                    id = "4",
-                    title = "Security Alert",
-                    subtitle = "New device login verified via OTP.",
-                    timestamp = "2d ago",
-                    type = NotificationType.SECURITY,
-                    isRead = true
+                    id = tx.transactionId,
+                    title = if (isTopUp) "M-Pesa Wallet Top Up" else "Vendor Payment",
+                    subtitle = if (isTopUp) 
+                        "KSh ${tx.amountInCents / 100} deposited to your student wallet."
+                    else 
+                        "KSh ${tx.amountInCents / 100} processed with KSh ${tx.discountAppliedInCents / 100} student discount.",
+                    timestamp = dateFormat.format(Date(tx.timestamp)),
+                    type = if (isTopUp) NotificationType.TOP_UP else NotificationType.DISCOUNT,
+                    isRead = tx.transactionId in readIds
                 )
-            )
-        )
+            }
     }
 
     Scaffold(
@@ -89,12 +81,14 @@ fun NotificationsScreen(
                     }
                 },
                 actions = {
-                    TextButton(
-                        onClick = {
-                            notificationsList = notificationsList.map { it.copy(isRead = true) }
+                    if (notificationsList.isNotEmpty()) {
+                        TextButton(
+                            onClick = {
+                                readIds = readIds + notificationsList.map { it.id }
+                            }
+                        ) {
+                            Text("Mark all as read", color = Color(0xFF006D3E), fontWeight = FontWeight.Bold)
                         }
-                    ) {
-                        Text("Mark all as read", color = Color(0xFF006D3E), fontWeight = FontWeight.Bold)
                     }
                 }
             )
@@ -132,12 +126,10 @@ fun NotificationsScreen(
                         NotificationCard(
                             notification = item,
                             onClick = {
-                                notificationsList = notificationsList.map {
-                                    if (it.id == item.id) it.copy(isRead = true) else it
-                                }
+                                readIds = readIds + item.id
                             },
                             onDismiss = {
-                                notificationsList = notificationsList.filter { it.id != item.id }
+                                dismissedIds = dismissedIds + item.id
                             }
                         )
                     }

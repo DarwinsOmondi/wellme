@@ -64,9 +64,27 @@ class MerchantRepositoryImpl @Inject constructor(
 
     override fun getAllMerchants(): Flow<List<MerchantProfile>> {
         Log.d(TAG, "getAllMerchants flow requested")
-        return merchantDao.getAllMerchantsFlow().map { list ->
-            Log.d(TAG, "All merchants update emitted: ${list.size} items")
-            list.map { it.toDomain() }
+        return merchantDao.getAllMerchantsFlow()
+            .onStart { refreshAllMerchants() }
+            .map { list ->
+                Log.d(TAG, "All merchants update emitted: ${list.size} items")
+                list.map { it.toDomain() }
+            }
+    }
+
+    private suspend fun refreshAllMerchants() {
+        Log.d(TAG, "Refreshing all merchants from remote")
+        try {
+            val dtos = postgrest["merchants"]
+                .select(columns = Columns.ALL)
+                .decodeList<MerchantDto>()
+            
+            Log.d(TAG, "Remote merchants fetch result: ${dtos.size} items")
+            dtos.forEach { dto ->
+                merchantDao.insertMerchant(MerchantEntity.fromDomain(dto.toDomain()))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error refreshing all merchants", e)
         }
     }
 
