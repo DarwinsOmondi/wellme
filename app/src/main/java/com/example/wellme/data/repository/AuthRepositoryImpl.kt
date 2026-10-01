@@ -1,6 +1,7 @@
 package com.example.wellme.data.repository
 
 import android.util.Log
+import com.codeskop.sdk.core.Codeskop
 import com.example.wellme.domain.repository.AuthRepository
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.OtpType
@@ -51,6 +52,7 @@ class AuthRepositoryImpl @Inject constructor(
         Log.d(TAG, "Attempting signOut")
         return try {
             auth.signOut()
+            Codeskop.reset()
             Log.d(TAG, "signOut successful")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -61,6 +63,12 @@ class AuthRepositoryImpl @Inject constructor(
 
     override fun getCurrentUser(): UserInfo? {
         val user = auth.currentUserOrNull()
+        user?.let { u ->
+            Codeskop.identify(
+                userId = u.id,
+                traits = mapOf("role" to u.appMetadata?.get("role"))
+            )
+        }
         Log.d(TAG, "getCurrentUser: ${user?.id ?: "No user logged in"}")
         return user
     }
@@ -79,7 +87,11 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun verifyOtp(email: String, token: String, type: OtpType.Email): Result<Unit> {
+    override suspend fun verifyOtp(
+        email: String,
+        token: String,
+        type: OtpType.Email
+    ): Result<Unit> {
         Log.d(TAG, "Attempting verifyOtp for: $email, type: $type")
         return try {
             auth.verifyEmailOtp(type, email, token)

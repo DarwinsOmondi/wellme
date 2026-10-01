@@ -1,5 +1,6 @@
 package com.example.wellme.util
 
+import com.codeskop.sdk.core.Codeskop
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
 import kotlinx.serialization.SerializationException
@@ -8,6 +9,12 @@ import java.net.UnknownHostException
 
 object ErrorMapper {
     fun getUserFriendlyMessage(throwable: Throwable): String {
+        try {
+            Codeskop.recordException(throwable)
+        } catch (_: Throwable) {
+            // Ignore if SDK is not initialized in unit tests
+        }
+
         return when (throwable) {
             is UnknownHostException, is ConnectException -> 
                 "No internet connection. Please check your network."
