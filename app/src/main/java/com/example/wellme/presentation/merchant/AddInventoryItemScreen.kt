@@ -78,8 +78,8 @@ fun AddInventoryItemContent(
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
 
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
             if (uri != null) {
                 selectedImageUri = uri
@@ -105,28 +105,46 @@ fun AddInventoryItemContent(
     if (showImageSourceDialog) {
         AlertDialog(
             onDismissRequest = { showImageSourceDialog = false },
-            title = { Text("Choose Image Source") },
+            title = { Text("Choose Image Source", fontWeight = FontWeight.Bold) },
             text = {
-                Column {
-                    TextButton(onClick = {
-                        showImageSourceDialog = false
-                        photoPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
-                    }) {
-                        Text("Gallery")
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(
+                        onClick = {
+                            showImageSourceDialog = false
+                            try {
+                                galleryLauncher.launch("image/*")
+                            } catch (e: Exception) {
+                                android.util.Log.e("AddInventoryItem", "Gallery launch error", e)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Select from Gallery", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
-                    TextButton(onClick = {
-                        showImageSourceDialog = false
-                        val uri = createImageUri(context)
-                        tempCameraUri = uri
-                        cameraLauncher.launch(uri)
-                    }) {
-                        Text("Camera")
+                    TextButton(
+                        onClick = {
+                            showImageSourceDialog = false
+                            try {
+                                val uri = createImageUri(context)
+                                if (uri != null) {
+                                    tempCameraUri = uri
+                                    cameraLauncher.launch(uri)
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("AddInventoryItem", "Camera launch error", e)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Take Photo with Camera", fontSize = 16.sp, fontWeight = FontWeight.Medium)
                     }
                 }
             },
-            confirmButton = {}
+            confirmButton = {
+                TextButton(onClick = { showImageSourceDialog = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            }
         )
     }
 
@@ -386,19 +404,24 @@ fun AddInventoryItemContent(
     }
 }
 
-private fun createImageUri(context: Context): Uri {
-    val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-    val storageDir: File? = context.getExternalFilesDir("Pictures")
-    val file = File.createTempFile(
-        "JPEG_${timeStamp}_",
-        ".jpg",
-        storageDir
-    )
-    return FileProvider.getUriForFile(
-        context,
-        "${context.packageName}.fileprovider",
-        file
-    )
+private fun createImageUri(context: Context): Uri? {
+    return try {
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir: File? = context.getExternalFilesDir("Pictures")
+        val file = File.createTempFile(
+            "JPEG_${timeStamp}_",
+            ".jpg",
+            storageDir
+        )
+        FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+    } catch (e: Exception) {
+        android.util.Log.e("AddInventoryItem", "Error creating image URI", e)
+        null
+    }
 }
 
 @Composable
