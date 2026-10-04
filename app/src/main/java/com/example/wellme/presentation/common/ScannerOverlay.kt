@@ -2,6 +2,7 @@ package com.example.wellme.presentation.common
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.util.Log
 import android.view.ViewGroup
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -34,10 +34,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
 
+@OptIn(androidx.camera.core.ExperimentalGetImage::class)
 @Composable
 fun ScannerOverlay(
     onClose: () -> Unit,
@@ -99,6 +101,7 @@ fun ScannerOverlay(
                                 .build()
                                 .also { analysis ->
                                     analysis.setAnalyzer(executor) { imageProxy ->
+                                        @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
                                         val mediaImage = imageProxy.image
                                         if (mediaImage != null) {
                                             val image = InputImage.fromMediaImage(
@@ -313,7 +316,7 @@ fun ScannerOverlay(
 fun parseQrData(data: String): Pair<String, Long> {
     return try {
         if (data.contains("wellme_pay://")) {
-            val uri = android.net.Uri.parse(data)
+            val uri = Uri.parse(data)
             val merchantId = uri.host ?: uri.path?.removePrefix("/") ?: "campus_cafe"
             val amountKsh = uri.getQueryParameter("amount")?.toDoubleOrNull() ?: 100.0
             Pair(merchantId, (amountKsh * 100).toLong())
@@ -330,7 +333,7 @@ fun parseQrData(data: String): Pair<String, Long> {
         } else {
             Pair(data.ifBlank { "campus_cafe" }, 10000L)
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         Pair("campus_cafe", 10000L)
     }
 }
