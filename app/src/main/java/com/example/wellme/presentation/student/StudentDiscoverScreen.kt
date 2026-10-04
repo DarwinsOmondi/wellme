@@ -96,13 +96,11 @@ fun MerchantDiscoveryCard(
     merchant: MerchantProfile,
     onClick: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        shadowElevation = 1.dp
+    com.example.wellme.theme.NeumorphicCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 20.dp,
+        elevation = 4.dp,
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

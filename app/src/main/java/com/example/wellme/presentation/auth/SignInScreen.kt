@@ -4,14 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -20,7 +18,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,6 +44,7 @@ fun SignInScreen(
                 snackbarHostState.showSnackbar((state as AuthState.Error).message)
                 viewModel.clearError()
             }
+
             else -> {}
         }
     }
@@ -62,7 +60,7 @@ fun SignInScreen(
             isLoading = state is AuthState.Loading,
             onSignInClick = viewModel::signIn,
             onNavigateToSignUp = onNavigateToSignUp,
-            modifier = modifier // Background should be edge to edge
+            modifier = modifier
         )
     }
 }
@@ -137,141 +135,105 @@ fun SignInScreenContent(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Sign In Card
-            Surface(
+            Text(
+                text = stringResource(R.string.campus_or_business_email),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF44474E)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = email,
+                onValueChange = onEmailChange,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                color = Color.White,
-                shadowElevation = 2.dp
-            ) {
-                Column(
-                    modifier = Modifier.padding(24.dp)
-                ) {
+                placeholder = {
                     Text(
-                        text = stringResource(R.string.campus_or_business_email),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF44474E)
+                        text = stringResource(R.string.email_hint),
+                        color = Color(0xFF8E9199)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = onEmailChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.email_hint),
-                                color = Color(0xFF8E9199)
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_email),
-                                contentDescription = null,
-                                tint = Color(0xFF44474E),
-                                modifier = Modifier.size(20.dp)
-                            )
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFFEFF1F8),
-                            unfocusedContainerColor = Color(0xFFEFF1F8),
-                            focusedBorderColor = EmeraldGreen,
-                            unfocusedBorderColor = Color.Transparent,
-                        ),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_email),
+                        contentDescription = null,
+                        tint = Color(0xFF44474E),
+                        modifier = Modifier.size(20.dp)
                     )
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFF8F9FB),
+                    unfocusedContainerColor = Color(0xFFF8F9FB),
+                    focusedBorderColor = EmeraldGreen,
+                    unfocusedBorderColor = Color.Transparent,
+                ),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+            )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-                    Button(
-                        onClick = onSignInClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        enabled = isButtonEnabled,
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1E7D56)
-                        )
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            if (isLoading) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text(
-                                    text = "Sending OTP...",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            } else {
-                                Text(
-                                    text = "Continue with OTP",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    val signUpText = buildAnnotatedString {
-                        withStyle(style = SpanStyle(color = Color(0xFF44474E))) {
-                            append(stringResource(R.string.dont_have_account))
-                        }
-                        withStyle(style = SpanStyle(color = Color(0xFF006760), fontWeight = FontWeight.Medium)) {
-                            append(stringResource(R.string.sign_up_action))
-                        }
-                    }
-
-                    Text(
-                        text = signUpText,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onNavigateToSignUp() },
-                        textAlign = TextAlign.Center,
-                        fontSize = 14.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-
-            // Secure Network Badge
-            Surface(
-                color = Color(0xFFE8EDFF),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.padding(bottom = 48.dp)
+            Button(
+                onClick = onSignInClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = isButtonEnabled,
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF1E7D56)
+                )
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_security),
-                        contentDescription = null,
-                        tint = Color(0xFF006760),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.secure_campus_network),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF44474E)
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Sending OTP...",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Text(
+                            text = "Continue with OTP",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            val signUpText = buildAnnotatedString {
+                withStyle(style = SpanStyle(color = Color(0xFF44474E))) {
+                    append(stringResource(R.string.dont_have_account))
+                }
+                withStyle(
+                    style = SpanStyle(
+                        color = Color(0xFF006760),
+                        fontWeight = FontWeight.Medium
+                    )
+                ) {
+                    append(stringResource(R.string.sign_up_action))
+                }
+            }
+
+            Text(
+                text = signUpText,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToSignUp() },
+                textAlign = TextAlign.Center,
+                fontSize = 14.sp
+            )
         }
     }
 }

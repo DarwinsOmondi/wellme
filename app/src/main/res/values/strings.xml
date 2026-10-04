@@ -17,7 +17,7 @@
     <string name="back_button_content_description">Back</string>
     <string name="visibility_toggle_content_description">Toggle password visibility</string>
     <string name="welcome_back">Welcome Back</string>
-    <string name="welcome_back_subtitle">Empowering your community, one investment at a time.</string>
+    <string name="welcome_back_subtitle">Invest in your community.</string>
     <string name="campus_or_business_email">Campus or Business Email</string>
     <string name="email_hint">name@university.edu</string>
     <string name="password_label">Password</string>

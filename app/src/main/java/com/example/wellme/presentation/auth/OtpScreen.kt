@@ -208,6 +208,7 @@ fun OtpScreenContent(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
+                modifier = Modifier.align(Alignment.Bottom),
                 text = "Securely encrypted verification ",
                 style = TextStyle(
                     fontSize = 11.sp

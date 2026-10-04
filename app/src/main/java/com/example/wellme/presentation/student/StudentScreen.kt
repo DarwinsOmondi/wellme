@@ -457,11 +457,10 @@ fun TransactionItem(
     transaction: Transaction,
     modifier: Modifier = Modifier
 ) {
-    Surface(
+    com.example.wellme.theme.NeumorphicCard(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f)),
-        color = Color.White
+        cornerRadius = 16.dp,
+        elevation = 4.dp
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -850,13 +849,12 @@ fun AllTransactionsDialog(
 
 @Composable
 fun DiscoverVendorsBanner(onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF006D3E),
-        shadowElevation = 2.dp
+    com.example.wellme.theme.NeumorphicCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = Color(0xFF006D3E),
+        cornerRadius = 20.dp,
+        elevation = 6.dp,
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
