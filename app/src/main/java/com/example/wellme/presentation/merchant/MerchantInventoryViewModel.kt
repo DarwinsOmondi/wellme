@@ -19,7 +19,6 @@ class MerchantInventoryViewModel @Inject constructor(
 
     private val merchantId = authRepository.getCurrentUser()?.id ?: ""
 
-    // --- POS (Collect Payment) State ---
     private val _cart = MutableStateFlow<List<MerchantItem>>(emptyList())
     val cart = _cart.asStateFlow()
 
@@ -68,14 +67,23 @@ class MerchantInventoryViewModel @Inject constructor(
 
     // --- Actions ---
     fun addItem(item: MerchantItem) {
+        val activeMerchantId = merchantId.ifBlank { "m1" }
         viewModelScope.launch {
-            inventoryRepository.upsertItem(item.copy(merchantId = merchantId))
+            try {
+                inventoryRepository.upsertItem(item.copy(merchantId = activeMerchantId))
+            } catch (e: Throwable) {
+                android.util.Log.e("MerchantInventoryVM", "Error adding item", e)
+            }
         }
     }
 
     fun updateStock(itemId: String, newStock: Int) {
         viewModelScope.launch {
-            inventoryRepository.updateStock(itemId, newStock)
+            try {
+                inventoryRepository.updateStock(itemId, newStock)
+            } catch (e: Throwable) {
+                android.util.Log.e("MerchantInventoryVM", "Error updating stock", e)
+            }
         }
     }
 

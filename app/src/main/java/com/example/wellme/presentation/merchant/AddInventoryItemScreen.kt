@@ -359,29 +359,35 @@ fun AddInventoryItemContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Save Button
+            val isValid = name.isNotBlank() && (price.toDoubleOrNull() ?: 0.0) > 0
+
             Button(
                 onClick = {
+                    if (!isValid) return@Button
                     val priceVal = price.toDoubleOrNull() ?: 0.0
                     val stockVal = stock.toIntOrNull() ?: 0
                     onAddItem(
                         MerchantItem(
                             id = UUID.randomUUID().toString(),
-                            name = name,
+                            name = name.trim(),
                             price = priceVal,
                             stockUnits = stockVal,
                             category = category,
-                            description = description,
+                            description = description.trim(),
                             imageUrl = selectedImageUri?.toString(),
                             merchantId = ""
                         )
                     )
                 },
+                enabled = isValid,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF006D3E),
+                    disabledContainerColor = Color(0xFF006D3E).copy(alpha = 0.4f)
+                )
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
