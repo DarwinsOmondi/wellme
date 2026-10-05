@@ -165,8 +165,8 @@ dependencies {
     implementation(libs.ktor.serialization.kotlinx.json)
 
     //codeskop
-    implementation("com.codeskop.sdk:tracker-android:0.2.0")
-    implementation("com.codeskop.sdk:tracker-okhttp:0.2.0")
+    implementation("com.codeskop.sdk:tracker-android:0.3.0")
+    implementation("com.codeskop.sdk:tracker-okhttp:0.3.0")
 
     // CameraX & Barcode Scanning
     implementation("androidx.camera:camera-camera2:1.4.1")

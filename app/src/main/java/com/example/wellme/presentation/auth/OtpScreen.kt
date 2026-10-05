@@ -25,8 +25,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wellme.R
-import com.example.wellme.theme.EmeraldDark
-import com.example.wellme.theme.EmeraldGreen
 import com.example.wellme.theme.WellMeTheme
 
 @Composable
@@ -135,9 +133,9 @@ fun OtpScreenContent(
                 )
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFEFF1F8),
-                unfocusedContainerColor = Color(0xFFEFF1F8),
-                focusedBorderColor = EmeraldGreen,
+                focusedContainerColor = Color(0xFFF8F9FB),
+                unfocusedContainerColor = Color(0xFFF8F9FB),
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = Color.Transparent,
             )
         )
@@ -235,7 +233,7 @@ fun OtpScreenTopBar(onBackClick: () -> Unit) {
                 Icon(
                     imageVector = ImageVector.vectorResource(id = R.drawable.ic_back_arrow),
                     contentDescription = stringResource(id = R.string.back_button_content_description),
-                    tint = EmeraldDark
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         },

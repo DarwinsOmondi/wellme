@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.wellme.theme.PrimaryBlue
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
@@ -178,7 +179,7 @@ fun ScannerOverlay(
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = { launcher.launch(Manifest.permission.CAMERA) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E)),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Grant Permission", fontWeight = FontWeight.Bold)
@@ -218,7 +219,7 @@ fun ScannerOverlay(
                     modifier = Modifier
                         .size(44.dp)
                         .background(
-                            if (isFlashOn) Color(0xFF006D3E) else Color.Black.copy(alpha = 0.5f),
+                            if (isFlashOn) PrimaryBlue else Color.Black.copy(alpha = 0.5f),
                             CircleShape
                         )
                 ) {
@@ -259,7 +260,7 @@ fun ScannerOverlay(
             ) {
                 val bracketSize = 48.dp
                 val stroke = 4.dp
-                val color = Color(0xFF006D3E)
+                val color = PrimaryBlue
                 val radius = 16.dp
 
                 // Top Left
@@ -378,7 +379,7 @@ fun ManualPaymentDialog(
                     }
                 },
                 enabled = merchantId.isNotBlank() && (amount.toDoubleOrNull() ?: 0.0) > 0,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
                 Text("Process Payment", fontWeight = FontWeight.Bold)
             }

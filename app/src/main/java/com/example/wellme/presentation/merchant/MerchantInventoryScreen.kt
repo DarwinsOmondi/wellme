@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.wellme.R
 import com.example.wellme.domain.model.MerchantItem
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 import java.util.Locale
 
@@ -97,7 +99,7 @@ fun MerchantInventoryContent(
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             unfocusedBorderColor = Color.Transparent,
-                            focusedBorderColor = Color(0xFF006D3E),
+                            focusedBorderColor = PrimaryBlue,
                             unfocusedContainerColor = Color.White,
                             focusedContainerColor = Color.White
                         ),
@@ -107,7 +109,7 @@ fun MerchantInventoryContent(
                     Surface(
                         modifier = Modifier.size(56.dp),
                         shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF006D3E)
+                        color = PrimaryBlue
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(Icons.Default.FilterList, contentDescription = "Filter", tint = Color.White)
@@ -138,8 +140,8 @@ fun MerchantInventoryContent(
                     KpiCard(
                         title = "Total Items",
                         value = totalItems.toString().padStart(2, '0'),
-                        backgroundColor = Color(0xFFD4E7E6),
-                        contentColor = Color(0xFF006D3E),
+                        backgroundColor = PrimaryBlueLight,
+                        contentColor = PrimaryBlue,
                         modifier = Modifier.weight(1f)
                     )
                     KpiCard(
@@ -228,7 +230,7 @@ fun EditStockDialog(
                     val newStock = stockText.toIntOrNull() ?: item.stockUnits
                     onConfirm(newStock)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
                 Text("Update")
             }
@@ -258,7 +260,7 @@ fun MerchantInventoryHeader(onProfileClick: () -> Unit) {
             color = Color.LightGray
         ) {
             AsyncImage(
-                model = "https://ui-avatars.com/api/?name=Merchant&background=006D3E&color=fff",
+                model = "https://ui-avatars.com/api/?name=Merchant&background=2563EB&color=fff",
                 contentDescription = "Profile",
                 modifier = Modifier.fillMaxSize()
             )
@@ -268,7 +270,7 @@ fun MerchantInventoryHeader(onProfileClick: () -> Unit) {
             text = "Inventory",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF006D3E)
+            color = MaterialTheme.colorScheme.primary
         )
 
         IconButton(onClick = { /* Settings */ }) {
@@ -282,7 +284,7 @@ fun CategoryPill(name: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
-        color = if (isSelected) Color(0xFF006D3E) else Color.White,
+        color = if (isSelected) PrimaryBlue else Color.White,
         border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0)),
         shadowElevation = if (isSelected) 2.dp else 0.dp
     ) {
@@ -351,7 +353,7 @@ fun InventoryItemCard(item: MerchantItem, onEdit: () -> Unit) {
                     Text(text = item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1A1C1E))
                     Text(
                         text = String.format(Locale.getDefault(), "KSh %,.2f", item.price),
-                        color = Color(0xFF006D3E),
+                        color = PrimaryBlue,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -370,7 +372,7 @@ fun InventoryItemCard(item: MerchantItem, onEdit: () -> Unit) {
                         modifier = Modifier
                             .background(
                                 color = when (item.category) {
-                                    "Food" -> Color(0xFFE8F5E9)
+                                    "Food" -> PrimaryBlueLight
                                     "Drinks" -> Color(0xFFFFF3E0)
                                     else -> Color(0xFFE3F2FD)
                                 },
@@ -381,7 +383,7 @@ fun InventoryItemCard(item: MerchantItem, onEdit: () -> Unit) {
                         Text(
                             text = item.category,
                             color = when (item.category) {
-                                "Food" -> Color(0xFF2E7D32)
+                                "Food" -> PrimaryBlue
                                 "Drinks" -> Color(0xFFEF6C00)
                                 else -> Color(0xFF1565C0)
                             },

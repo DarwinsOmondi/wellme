@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.WellMeTheme
 import kotlin.math.roundToInt
 
@@ -80,7 +81,7 @@ fun SwipeToConfirm(
             ) {
                 Text(
                     text = "Payment Sent!",
-                    color = Color(0xFF006D3E),
+                    color = PrimaryBlue,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -124,7 +125,7 @@ fun SwipeToConfirm(
                     .size(thumbSize + 8.dp)
                     .padding(4.dp),
                 shape = CircleShape,
-                color = Color(0xFF006D3E),
+                color = PrimaryBlue,
                 shadowElevation = 4.dp
             ) {
                 Icon(

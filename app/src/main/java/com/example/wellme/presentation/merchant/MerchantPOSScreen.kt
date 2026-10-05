@@ -30,6 +30,9 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.wellme.R
 import com.example.wellme.domain.model.MerchantItem
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueDark
+import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 import java.util.Locale
 import androidx.core.net.toUri
@@ -131,7 +134,7 @@ fun MerchantPOSContent(
                 )
                 Button(
                     onClick = onScanCustomer,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E)),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                     shape = RoundedCornerShape(12.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
                 ) {
@@ -203,7 +206,7 @@ fun MerchantPOSHeader(onProfileClick: () -> Unit) {
             color = Color.LightGray
         ) {
             AsyncImage(
-                model = "https://ui-avatars.com/api/?name=Merchant&background=006D3E&color=fff",
+                model = "https://ui-avatars.com/api/?name=Merchant&background=2563EB&color=fff",
                 contentDescription = "Profile",
                 modifier = Modifier.fillMaxSize()
             )
@@ -213,7 +216,7 @@ fun MerchantPOSHeader(onProfileClick: () -> Unit) {
             text = "Collect Payment",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF006D3E)
+            color = MaterialTheme.colorScheme.primary
         )
 
         IconButton(onClick = onProfileClick) {
@@ -238,7 +241,7 @@ fun MerchantQrPaymentDialog(
                     text = "Customer Checkout QR",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
-                    color = Color(0xFF006D3E)
+                    color = PrimaryBlue
                 )
                 Text(
                     text = String.format(Locale.getDefault(), "KSh %,.2f", amount),
@@ -285,7 +288,7 @@ fun MerchantQrPaymentDialog(
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
                 Text("Done", fontWeight = FontWeight.Bold)
             }
@@ -324,7 +327,7 @@ fun QuickAddItemCard(item: MerchantItem, onAdd: () -> Unit) {
                 Text(
                     text = String.format(Locale.getDefault(), "KSh %,.0f", item.price),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF006D3E),
+                    color = PrimaryBlue,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
@@ -371,7 +374,7 @@ fun FeaturedItemCard(item: MerchantItem, onAdd: () -> Unit) {
                 Text(
                     text = String.format(Locale.getDefault(), "KSh %,.0f", item.price),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF006D3E),
+                    color = PrimaryBlue,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
@@ -450,7 +453,7 @@ fun OrderSummarySection(
                     text = String.format(Locale.getDefault(), "KSh %,.2f", total),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF006D3E)
+                    color = PrimaryBlue
                 )
             }
         }
@@ -467,7 +470,7 @@ fun SwipeToGenerateQr(
             .fillMaxWidth()
             .height(64.dp),
         shape = RoundedCornerShape(32.dp),
-        color = Color(0xFFE8F0FF)
+        color = PrimaryBlueLight
     ) {
         Box(contentAlignment = Alignment.CenterStart) {
             Row(
@@ -479,7 +482,7 @@ fun SwipeToGenerateQr(
                     text = "SWIPE TO GENERATE QR",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF00391C),
+                    color = PrimaryBlueDark,
                     letterSpacing = 1.sp
                 )
             }
@@ -490,7 +493,7 @@ fun SwipeToGenerateQr(
                     .size(56.dp)
                     .clickable { onSwipeComplete() },
                 shape = CircleShape,
-                color = Color(0xFF006D3E),
+                color = PrimaryBlue,
                 shadowElevation = 4.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {

@@ -31,16 +31,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.example.wellme.theme.EmeraldDark
-import com.example.wellme.theme.EmeraldGreen
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
+import com.example.wellme.util.GuestSession
 
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
     onSignOut: () -> Unit,
     onBack: () -> Unit,
-    onNavigateToDetail: (String) -> Unit = {}
+    onNavigateToDetail: (String) -> Unit = {},
+    onNavigateToSignIn: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -71,7 +73,8 @@ fun ProfileScreen(
         },
         onBackClick = onBack,
         onSignOutClick = viewModel::signOut,
-        onNavigateToDetail = onNavigateToDetail
+        onNavigateToDetail = onNavigateToDetail,
+        onNavigateToSignIn = onNavigateToSignIn
     )
 }
 
@@ -83,8 +86,11 @@ fun ProfileScreenContent(
     onAvatarClick: () -> Unit,
     onBackClick: () -> Unit,
     onSignOutClick: () -> Unit,
-    onNavigateToDetail: (String) -> Unit
+    onNavigateToDetail: (String) -> Unit,
+    onNavigateToSignIn: () -> Unit
 ) {
+    val isGuest = GuestSession.isGuest
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -95,7 +101,7 @@ fun ProfileScreenContent(
                     Text(
                         "WellMe",
                         fontWeight = FontWeight.Bold,
-                        color = EmeraldGreen,
+                        color = PrimaryBlue,
                         fontSize = 24.sp
                     )
                 },
@@ -104,26 +110,28 @@ fun ProfileScreenContent(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = EmeraldGreen
+                            tint = PrimaryBlue
                         )
                     }
                 },
                 actions = {
-                    val avatarUrl = (state as? ProfileUiState.Success)?.profile?.avatarUrl
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 16.dp)
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.LightGray)
-                            .clickable(onClick = onAvatarClick)
-                    ) {
-                        AsyncImage(
-                            model = avatarUrl ?: "https://ui-avatars.com/api/?name=User&background=random",
-                            contentDescription = "Profile",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
+                    if (!isGuest) {
+                        val avatarUrl = (state as? ProfileUiState.Success)?.profile?.avatarUrl
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 16.dp)
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color.LightGray)
+                                .clickable(onClick = onAvatarClick)
+                        ) {
+                            AsyncImage(
+                                model = avatarUrl ?: "https://ui-avatars.com/api/?name=User&background=random",
+                                contentDescription = "Profile",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -144,111 +152,171 @@ fun ProfileScreenContent(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            when (state) {
-                is ProfileUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = EmeraldGreen)
+            if (isGuest) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Surface(
+                        modifier = Modifier.size(80.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
-                }
-                is ProfileUiState.Success -> {
-                    val profile = state.profile
-                    
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
                     Text(
-                        text = profile.fullName,
+                        text = "Guest User",
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1A1C1E)
                     )
-                    
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = profile.userId,
-                        fontSize = 14.sp,
-                        color = Color.Gray,
-                        fontWeight = FontWeight.Medium,
-                        letterSpacing = 1.sp,
-                        modifier = Modifier.padding(top = 8.dp)
+                        text = "You are currently browsing the app in guest mode. Sign in or create an account to access your secure wallet, transaction history, and full features.",
+                        fontSize = 15.sp,
+                        color = Color(0xFF44474E),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        lineHeight = 22.sp
                     )
-
-                    Spacer(modifier = Modifier.height(40.dp))
-
-                    Text(
-                        text = "Account Settings",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Start,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1C1E)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        color = Color.White,
-                        shadowElevation = 1.dp
-                    ) {
-                        Column {
-                            SettingsItem(
-                                icon = Icons.Default.PersonOutline,
-                                title = "Personal Details",
-                                onClick = { onNavigateToDetail("personal") }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F1F1))
-                            SettingsItem(
-                                icon = Icons.Default.Security,
-                                title = "Security",
-                                onClick = { onNavigateToDetail("security") }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F1F1))
-                            SettingsItem(
-                                icon = Icons.Default.NotificationsNone,
-                                title = "Notification Preferences",
-                                onClick = { onNavigateToDetail("notifications") }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F1F1))
-                            SettingsItem(
-                                icon = Icons.AutoMirrored.Filled.HelpOutline,
-                                title = "Help & Support",
-                                onClick = { onNavigateToDetail("help") }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
                     Spacer(modifier = Modifier.height(48.dp))
-
                     Button(
-                        onClick = onSignOutClick,
+                        onClick = {
+                            GuestSession.isGuest = false
+                            onNavigateToSignIn()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(64.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFFFEBEE),
-                            contentColor = Color(0xFFB71C1C)
-                        ),
-                        shape = RoundedCornerShape(20.dp)
+                            .height(56.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                "Sign Out",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                        Text(
+                            text = "Sign In / Register",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            } else {
+                when (state) {
+                    is ProfileUiState.Loading -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = PrimaryBlue)
                         }
                     }
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
-                is ProfileUiState.Error -> {
-                    Text(state.message, color = MaterialTheme.colorScheme.error)
-                }
-                else -> {
-                     // Idle
+                    is ProfileUiState.Success -> {
+                        val profile = state.profile
+                        
+                        Text(
+                            text = profile.fullName,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1A1C1E)
+                        )
+                        
+                        Text(
+                            text = profile.userId,
+                            fontSize = 14.sp,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 1.sp,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(40.dp))
+
+                        Text(
+                            text = "Account Settings",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Start,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1A1C1E)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            color = Color.White,
+                            shadowElevation = 1.dp
+                        ) {
+                            Column {
+                                SettingsItem(
+                                    icon = Icons.Default.PersonOutline,
+                                    title = "Personal Details",
+                                    onClick = { onNavigateToDetail("personal") }
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F1F1))
+                                SettingsItem(
+                                    icon = Icons.Default.Security,
+                                    title = "Security",
+                                    onClick = { onNavigateToDetail("security") }
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F1F1))
+                                SettingsItem(
+                                    icon = Icons.Default.NotificationsNone,
+                                    title = "Notification Preferences",
+                                    onClick = { onNavigateToDetail("notifications") }
+                                )
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color(0xFFF1F1F1))
+                                SettingsItem(
+                                    icon = Icons.AutoMirrored.Filled.HelpOutline,
+                                    title = "Help & Support",
+                                    onClick = { onNavigateToDetail("help") }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.height(48.dp))
+
+                        Button(
+                            onClick = onSignOutClick,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(64.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFFEBEE),
+                                contentColor = Color(0xFFB71C1C)
+                            ),
+                            shape = RoundedCornerShape(20.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null)
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    "Sign Out",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                    is ProfileUiState.Error -> {
+                        Text(state.message, color = MaterialTheme.colorScheme.error)
+                    }
+                    else -> {
+                         // Idle
+                    }
                 }
             }
         }
@@ -271,13 +339,13 @@ fun SettingsItem(
         Surface(
             modifier = Modifier.size(40.dp),
             shape = RoundedCornerShape(12.dp),
-            color = Color(0xFFE8F5E9)
+            color = PrimaryBlueLight
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color(0xFF004D40),
+                    tint = PrimaryBlue,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -317,7 +385,8 @@ fun ProfileScreenPreview() {
             onAvatarClick = {},
             onBackClick = {},
             onSignOutClick = {},
-            onNavigateToDetail = {}
+            onNavigateToDetail = {},
+            onNavigateToSignIn = {}
         )
     }
 }

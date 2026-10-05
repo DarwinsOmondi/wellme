@@ -23,6 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wellme.R
 import com.example.wellme.domain.model.LoanLifecycleState
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueDark
+import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -53,7 +56,7 @@ fun RequestCapitalTab(
             text = "Request Funding",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF006D3E),
+            color = PrimaryBlue,
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
         )
 
@@ -110,7 +113,7 @@ fun RequestCapitalTab(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF006D3E),
+                        focusedBorderColor = PrimaryBlue,
                         unfocusedBorderColor = Color(0xFFE0E0E0),
                         focusedContainerColor = Color(0xFFF8F9FB),
                         unfocusedContainerColor = Color(0xFFF8F9FB)
@@ -145,7 +148,7 @@ fun RequestCapitalTab(
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = "Info",
-                        tint = Color(0xFF006D3E),
+                        tint = PrimaryBlue,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -169,7 +172,7 @@ fun RequestCapitalTab(
                             onClick = { if (isEnabled) onSelectedYieldChange(yield) },
                             shape = RoundedCornerShape(12.dp),
                             border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE0E0E0)),
-                            color = if (isSelected) Color(0xFF006D3E) else Color.Transparent,
+                            color = if (isSelected) PrimaryBlue else Color.Transparent,
                             shadowElevation = if (isSelected) 2.dp else 0.dp
                         ) {
                             Text(
@@ -193,8 +196,8 @@ fun RequestCapitalTab(
                         .height(60.dp),
                     shape = RoundedCornerShape(30.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF006D3E),
-                        disabledContainerColor = Color(0xFF006D3E).copy(alpha = 0.5f)
+                        containerColor = PrimaryBlue,
+                        disabledContainerColor = PrimaryBlue.copy(alpha = 0.5f)
                     )
                 ) {
                     Row(
@@ -229,7 +232,7 @@ fun StatusCard(loanState: LoanLifecycleState) {
         colors = CardDefaults.cardColors(
             containerColor = when (loanState) {
                 is LoanLifecycleState.OperationalError -> Color(0xFFFFEBEE)
-                is LoanLifecycleState.DisbursedSuccess -> Color(0xFFE8F5E9)
+                is LoanLifecycleState.DisbursedSuccess -> PrimaryBlueLight
                 else -> Color(0xFFE3F2FD)
             }
         )
@@ -245,14 +248,14 @@ fun StatusCard(loanState: LoanLifecycleState) {
                     Text("Connecting to Secure Network...", fontWeight = FontWeight.Medium)
                 }
                 is LoanLifecycleState.RequestAccepted -> {
-                    Text("Request Accepted!", fontWeight = FontWeight.ExtraBold, color = Color(0xFF00391C))
+                    Text("Request Accepted!", fontWeight = FontWeight.ExtraBold, color = PrimaryBlueDark)
                     Text("Transaction ID: ${loanState.loanId}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(6.dp), color = Color(0xFF4CAF50), strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(6.dp), color = PrimaryBlue, strokeCap = androidx.compose.ui.graphics.StrokeCap.Round)
                     Text("Processing disbursement...", fontSize = 13.sp)
                 }
                 is LoanLifecycleState.DisbursedSuccess -> {
-                    Icon(imageVector = Icons.Default.Verified, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(32.dp))
-                    Text("Disbursement Successful!", fontWeight = FontWeight.ExtraBold, color = Color(0xFF1B5E20))
+                    Icon(imageVector = Icons.Default.Verified, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
+                    Text("Disbursement Successful!", fontWeight = FontWeight.ExtraBold, color = PrimaryBlueDark)
                     Text("KSh ${loanState.amountInCents / 100} deposited to your M-Pesa.", textAlign = TextAlign.Center)
                 }
                 is LoanLifecycleState.OperationalError -> {

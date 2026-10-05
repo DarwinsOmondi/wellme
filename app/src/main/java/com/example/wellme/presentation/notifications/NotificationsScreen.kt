@@ -24,6 +24,8 @@ import com.example.wellme.R
 import com.example.wellme.domain.model.Transaction
 import com.example.wellme.domain.model.TransactionType
 import com.example.wellme.presentation.student.StudentViewModel
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueLight
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -87,7 +89,7 @@ fun NotificationsScreen(
                                 readIds = readIds + notificationsList.map { it.id }
                             }
                         ) {
-                            Text("Mark all as read", color = Color(0xFF006D3E), fontWeight = FontWeight.Bold)
+                            Text("Mark all as read", color = PrimaryBlue, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -150,8 +152,8 @@ fun NotificationCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        color = if (notification.isRead) Color.White else Color(0xFFE8F5E9).copy(alpha = 0.5f),
-        border = BorderStroke(1.dp, if (notification.isRead) Color(0xFFE0E0E0) else Color(0xFF006D3E).copy(alpha = 0.3f)),
+        color = if (notification.isRead) Color.White else PrimaryBlueLight.copy(alpha = 0.5f),
+        border = BorderStroke(1.dp, if (notification.isRead) Color(0xFFE0E0E0) else PrimaryBlue.copy(alpha = 0.3f)),
         shadowElevation = 1.dp
     ) {
         Row(
@@ -162,7 +164,7 @@ fun NotificationCard(
                 modifier = Modifier.size(44.dp),
                 shape = CircleShape,
                 color = when (notification.type) {
-                    NotificationType.TOP_UP -> Color(0xFFE8F5E9)
+                    NotificationType.TOP_UP -> PrimaryBlueLight
                     NotificationType.DISCOUNT -> Color(0xFFE3F2FD)
                     NotificationType.ALLOWANCE -> Color(0xFFFFF3E0)
                     NotificationType.SECURITY -> Color(0xFFFFEBEE)
@@ -178,7 +180,7 @@ fun NotificationCard(
                         },
                         contentDescription = null,
                         tint = when (notification.type) {
-                            NotificationType.TOP_UP -> Color(0xFF2E7D32)
+                            NotificationType.TOP_UP -> PrimaryBlue
                             NotificationType.DISCOUNT -> Color(0xFF1565C0)
                             NotificationType.ALLOWANCE -> Color(0xFFEF6C00)
                             NotificationType.SECURITY -> Color(0xFFC62828)

@@ -24,7 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wellme.R
-import com.example.wellme.theme.EmeraldGreen
+// removed EmeraldGreen import
 import com.example.wellme.theme.WellMeTheme
 
 @Composable
@@ -32,7 +32,8 @@ fun SignInScreen(
     viewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     onOtpSent: (String) -> Unit = {},
-    onNavigateToSignUp: () -> Unit = {}
+    onNavigateToSignUp: () -> Unit = {},
+    onBrowseAsGuest: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -60,6 +61,7 @@ fun SignInScreen(
             isLoading = state is AuthState.Loading,
             onSignInClick = viewModel::signIn,
             onNavigateToSignUp = onNavigateToSignUp,
+            onBrowseAsGuest = onBrowseAsGuest,
             modifier = modifier
         )
     }
@@ -72,6 +74,7 @@ fun SignInScreenContent(
     isLoading: Boolean,
     onSignInClick: () -> Unit,
     onNavigateToSignUp: () -> Unit,
+    onBrowseAsGuest: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isButtonEnabled = email.isNotBlank() && !isLoading
@@ -108,12 +111,12 @@ fun SignInScreenContent(
                     text = stringResource(R.string.app_name),
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = EmeraldGreen
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Spacer(modifier = Modifier.size(24.dp)) // For balance
             }
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             Text(
                 text = stringResource(R.string.welcome_back),
@@ -133,7 +136,7 @@ fun SignInScreenContent(
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(36.dp))
 
             Text(
                 text = stringResource(R.string.campus_or_business_email),
@@ -164,24 +167,24 @@ fun SignInScreenContent(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color(0xFFF8F9FB),
                     unfocusedContainerColor = Color(0xFFF8F9FB),
-                    focusedBorderColor = EmeraldGreen,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = Color.Transparent,
                 ),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = onSignInClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(52.dp),
                 enabled = isButtonEnabled,
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1E7D56)
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             ) {
                 Row(
@@ -210,7 +213,26 @@ fun SignInScreenContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Browse as Guest Button
+            OutlinedButton(
+                onClick = onBrowseAsGuest,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(26.dp),
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary)
+            ) {
+                Text(
+                    text = "Browse as Guest",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             val signUpText = buildAnnotatedString {
                 withStyle(style = SpanStyle(color = Color(0xFF44474E))) {
@@ -218,8 +240,8 @@ fun SignInScreenContent(
                 }
                 withStyle(
                     style = SpanStyle(
-                        color = Color(0xFF006760),
-                        fontWeight = FontWeight.Medium
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
                     )
                 ) {
                     append(stringResource(R.string.sign_up_action))
@@ -247,7 +269,8 @@ fun SignInScreenPreview() {
             onEmailChange = {},
             isLoading = false,
             onSignInClick = {},
-            onNavigateToSignUp = {}
+            onNavigateToSignUp = {},
+            onBrowseAsGuest = {}
         )
     }
 }

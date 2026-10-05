@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wellme.presentation.auth.AuthViewModel
-import com.example.wellme.theme.EmeraldGreen
+import com.example.wellme.theme.PrimaryBlue
 
 @Composable
 fun SplashScreen(
@@ -52,7 +52,7 @@ fun SplashScreen(
                 imageVector = Icons.Default.Verified,
                 contentDescription = "WellMe Logo",
                 modifier = Modifier.size(120.dp),
-                tint = EmeraldGreen
+                tint = PrimaryBlue
             )
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -60,7 +60,7 @@ fun SplashScreen(
             Text(
                 text = "WellMe",
                 style = MaterialTheme.typography.headlineLarge,
-                color = EmeraldGreen,
+                color = PrimaryBlue,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp
             )
@@ -68,7 +68,7 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(48.dp))
             
             CircularProgressIndicator(
-                color = EmeraldGreen,
+                color = PrimaryBlue,
                 strokeWidth = 3.dp,
                 modifier = Modifier.size(32.dp)
             )

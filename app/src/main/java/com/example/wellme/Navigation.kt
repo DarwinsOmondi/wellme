@@ -17,6 +17,7 @@ import com.example.wellme.presentation.onboarding.*
 import com.example.wellme.presentation.profile.*
 import com.example.wellme.presentation.student.*
 import com.example.wellme.ui.main.MainScreen
+import com.example.wellme.util.GuestSession
 
 @Composable
 fun MainNavigation() {
@@ -61,7 +62,12 @@ fun MainNavigation() {
                         onOtpSent = { email ->
                             backStack.add(Otp(email))
                         },
-                        onNavigateToSignUp = { backStack.add(SignUp) }
+                        onNavigateToSignUp = { backStack.add(SignUp) },
+                        onBrowseAsGuest = {
+                            GuestSession.isGuest = true
+                            backStack.clear()
+                            backStack.add(StudentMain)
+                        }
                     )
                 }
                 entry<SignUp> {
@@ -207,6 +213,7 @@ fun MainNavigation() {
                     ProfileScreen(
                         viewModel = viewModel,
                         onSignOut = {
+                            GuestSession.isGuest = false
                             backStack.clear()
                             backStack.add(SignIn)
                         },
@@ -220,6 +227,11 @@ fun MainNavigation() {
                                 else -> null
                             }
                             key?.let { backStack.add(it) }
+                        },
+                        onNavigateToSignIn = {
+                            GuestSession.isGuest = false
+                            backStack.clear()
+                            backStack.add(SignIn)
                         }
                     )
                 }

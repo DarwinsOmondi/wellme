@@ -126,7 +126,7 @@ fun FinancialSettlementContent(
                     text = stringResource(id = R.string.step_3_of_3),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = EmeraldDark
+                    color = PrimaryBlue
                 )
                 Text(
                     text = stringResource(id = R.string.final_stage),

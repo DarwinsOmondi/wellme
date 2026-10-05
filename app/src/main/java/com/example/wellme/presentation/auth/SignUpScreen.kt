@@ -26,9 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wellme.R
-import com.example.wellme.theme.EmeraldDark
-import com.example.wellme.theme.EmeraldGreen
-import com.example.wellme.theme.EmeraldLight
+import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 
 @Composable
@@ -114,7 +112,7 @@ fun SignUpScreenContent(
                     isSelected = role == "STUDENT",
                     onClick = { onRoleChange("STUDENT") },
                     iconRes = R.drawable.ic_student,
-                    iconBackgroundColor = if (role == "STUDENT") EmeraldLight else Color(0xFFF0F0F0),
+                    iconBackgroundColor = if (role == "STUDENT") PrimaryBlueLight else Color(0xFFF0F0F0),
                     modifier = Modifier.weight(1f)
                 )
                 RoleSelectionCard(
@@ -157,7 +155,7 @@ fun SignUpScreenContent(
                             .height(56.dp),
                         enabled = isButtonEnabled,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = EmeraldDark,
+                            containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(28.dp)
@@ -199,7 +197,7 @@ fun SignUpScreenContent(
                 )
                 Text(
                     text = stringResource(id = R.string.sign_in),
-                    color = EmeraldGreen,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable { onNavigateToSignIn() }
                 )
@@ -224,7 +222,7 @@ fun SignUpTopBar(onBackClick: () -> Unit) {
                 Icon(
                     imageVector = ImageVector.vectorResource(id = R.drawable.ic_back_arrow),
                     contentDescription = stringResource(id = R.string.back_button_content_description),
-                    tint = EmeraldDark
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         },
@@ -248,7 +246,7 @@ fun RoleSelectionCard(
         modifier = modifier.height(140.dp),
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surface,
-        border = if (isSelected) BorderStroke(2.dp, EmeraldLight) else null,
+        border = if (isSelected) BorderStroke(2.dp, PrimaryBlueLight) else null,
         shadowElevation = 1.dp
     ) {
         Column(
@@ -266,7 +264,7 @@ fun RoleSelectionCard(
                     imageVector = ImageVector.vectorResource(id = iconRes),
                     contentDescription = null,
                     modifier = Modifier.size(28.dp),
-                    tint = EmeraldDark
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -320,7 +318,7 @@ fun SignUpInputField(
             keyboardOptions = keyboardOptions,
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = EmeraldGreen,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = Color(0xFFE0E0E0)
             )
         )

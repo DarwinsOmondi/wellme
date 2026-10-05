@@ -32,6 +32,7 @@ import com.example.wellme.domain.model.TransactionType
 import com.example.wellme.presentation.common.BottomSheetContent
 import com.example.wellme.presentation.common.ScannerOverlay
 import com.example.wellme.theme.WellMeTheme
+import com.example.wellme.util.GuestSession
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -87,6 +88,9 @@ fun StudentContent(
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showQuickActionsDialog by remember { mutableStateOf(false) }
     var showAllTransactionsDialog by remember { mutableStateOf(false) }
+    var showAuthRequiredDialog by remember { mutableStateOf(false) }
+
+    val isGuest = GuestSession.isGuest
 
     val balanceKsh = wallet?.let { it.balanceInCents / 100.0 } ?: 0.0
 
@@ -122,9 +126,15 @@ fun StudentContent(
 
                 BalanceCard(
                     balance = String.format(Locale.getDefault(), "KSh %,.2f", balanceKsh),
-                    onDepositClick = { showDepositDialog = true },
+                    onDepositClick = {
+                        if (isGuest) showAuthRequiredDialog = true
+                        else showDepositDialog = true
+                    },
                     onRefreshClick = onRefresh,
-                    onMoreClick = { showQuickActionsDialog = true }
+                    onMoreClick = {
+                        if (isGuest) showAuthRequiredDialog = true
+                        else showQuickActionsDialog = true
+                    }
                 )
 
                 SecurityInfoBar()
@@ -144,10 +154,38 @@ fun StudentContent(
             }
 
             BottomActionButton(
-                onClick = { isScanning = true },
+                onClick = {
+                    if (isGuest) showAuthRequiredDialog = true
+                    else isScanning = true
+                },
                 modifier = Modifier
                     .navigationBarsPadding()
                     .padding(bottom = 24.dp, top = 16.dp)
+            )
+        }
+
+        if (showAuthRequiredDialog) {
+            AlertDialog(
+                onDismissRequest = { showAuthRequiredDialog = false },
+                title = { Text("Sign In Required", fontWeight = FontWeight.Bold) },
+                text = { Text("Please sign in or create an account to deposit funds, make payments, and access personal wallet features.") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showAuthRequiredDialog = false
+                            GuestSession.isGuest = false
+                            onProfileClick()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Sign In / Register")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAuthRequiredDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
             )
         }
 

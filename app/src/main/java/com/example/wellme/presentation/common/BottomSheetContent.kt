@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import com.example.wellme.R
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.presentation.student.SheetState
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 import java.util.Locale
 
@@ -73,7 +75,7 @@ fun BottomSheetContent(
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_store),
                                     contentDescription = null,
-                                    tint = Color(0xFF006D3E),
+                                    tint = PrimaryBlue,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -130,7 +132,7 @@ fun BottomSheetContent(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
-                        color = Color(0xFFE8F5E9)
+                        color = PrimaryBlueLight
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
@@ -141,20 +143,20 @@ fun BottomSheetContent(
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_tag),
                                     contentDescription = null,
-                                    tint = Color(0xFF006D3E),
+                                    tint = PrimaryBlue,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = String.format(Locale.getDefault(), "WellMe Discount (%.0f%%)", state.merchant.discountTier * 100),
-                                    color = Color(0xFF006D3E),
+                                    color = PrimaryBlue,
                                     fontWeight = FontWeight.Medium,
                                     fontSize = 14.sp
                                 )
                             }
                             Text(
                                 text = String.format(Locale.getDefault(), "-KSh %,.2f", state.discountAppliedInCents / 100.0),
-                                color = Color(0xFF006D3E),
+                                color = PrimaryBlue,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
@@ -192,7 +194,7 @@ fun BottomSheetContent(
                 }
                 
                 is SheetState.Processing -> {
-                    CircularProgressIndicator(color = Color(0xFF006D3E))
+                    CircularProgressIndicator(color = PrimaryBlue)
                     Text(
                         text = "Processing Payment...",
                         modifier = Modifier.padding(top = 16.dp)
@@ -203,7 +205,7 @@ fun BottomSheetContent(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_verified),
                         contentDescription = null,
-                        tint = Color(0xFF2E7D32),
+                        tint = PrimaryBlue,
                         modifier = Modifier.size(64.dp)
                     )
                     Text(
@@ -217,7 +219,7 @@ fun BottomSheetContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 24.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                     ) {
                         Text("Done")
                     }

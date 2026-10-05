@@ -37,7 +37,8 @@ import androidx.core.content.FileProvider
 import coil3.compose.AsyncImage
 import com.example.wellme.R
 import com.example.wellme.domain.model.MerchantItem
-import com.example.wellme.theme.EmeraldGreen
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 import java.io.File
 import java.text.SimpleDateFormat
@@ -154,7 +155,7 @@ fun AddInventoryItemContent(
                 title = {
                     Text(
                         text = stringResource(R.string.add_item_title),
-                        color = Color(0xFF006D3E),
+                        color = PrimaryBlue,
                         fontWeight = FontWeight.Bold,
                         fontSize = 22.sp
                     )
@@ -164,7 +165,7 @@ fun AddInventoryItemContent(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_back_arrow),
                             contentDescription = stringResource(R.string.back_button_content_description),
-                            tint = Color(0xFF006D3E)
+                            tint = PrimaryBlue
                         )
                     }
                 },
@@ -227,7 +228,7 @@ fun AddInventoryItemContent(
                                         painter = painterResource(id = R.drawable.ic_add_a_photo),
                                         contentDescription = null,
                                         modifier = Modifier.size(48.dp),
-                                        tint = EmeraldGreen
+                                        tint = PrimaryBlue
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
@@ -254,7 +255,7 @@ fun AddInventoryItemContent(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = EmeraldGreen,
+                                focusedBorderColor = PrimaryBlue,
                                 unfocusedBorderColor = Color(0xFFE2E8F0)
                             )
                         )
@@ -284,7 +285,7 @@ fun AddInventoryItemContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = EmeraldGreen,
+                                    focusedBorderColor = PrimaryBlue,
                                     unfocusedBorderColor = Color(0xFFE2E8F0)
                                 )
                             )
@@ -308,7 +309,7 @@ fun AddInventoryItemContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = EmeraldGreen,
+                                    focusedBorderColor = PrimaryBlue,
                                     unfocusedBorderColor = Color(0xFFE2E8F0)
                                 )
                             )
@@ -349,7 +350,7 @@ fun AddInventoryItemContent(
                                 .height(120.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = EmeraldGreen,
+                                focusedBorderColor = PrimaryBlue,
                                 unfocusedBorderColor = Color(0xFFE2E8F0)
                             )
                         )
@@ -385,8 +386,8 @@ fun AddInventoryItemContent(
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF006D3E),
-                    disabledContainerColor = Color(0xFF006D3E).copy(alpha = 0.4f)
+                    containerColor = PrimaryBlue,
+                    disabledContainerColor = PrimaryBlue.copy(alpha = 0.4f)
                 )
             ) {
                 Row(
@@ -441,7 +442,7 @@ fun CategoryChip(
             .clickable { onClick() }
             .height(44.dp),
         shape = RoundedCornerShape(22.dp),
-        color = if (isSelected) Color(0xFF7DFFC4) else Color(0xFFE3E8FF)
+        color = if (isSelected) PrimaryBlueLight else Color(0xFFE3E8FF)
     ) {
         Box(
             modifier = Modifier.padding(horizontal = 28.dp),
@@ -449,7 +450,7 @@ fun CategoryChip(
         ) {
             Text(
                 text = text,
-                color = if (isSelected) Color(0xFF006D3E) else Color(0xFF5D6679),
+                color = if (isSelected) PrimaryBlue else Color(0xFF5D6679),
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 fontSize = 15.sp
             )

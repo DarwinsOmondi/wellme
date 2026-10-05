@@ -24,6 +24,9 @@ import androidx.compose.ui.unit.sp
 import com.example.wellme.R
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.model.Transaction
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueDark
+import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 import java.text.SimpleDateFormat
 import java.util.*
@@ -49,7 +52,7 @@ fun MerchantDashboard(
             text = "Financial Impact",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF006D3E),
+            color = PrimaryBlue,
             modifier = Modifier.padding(bottom = 24.dp)
         )
 
@@ -70,7 +73,7 @@ fun MerchantDashboard(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
                 contentDescription = "Receipt icon",
-                tint = Color(0xFF006D3E),
+                tint = PrimaryBlue,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -148,12 +151,12 @@ fun PayoutStreamItem(transaction: Transaction) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
-                        color = Color(0xFFE8F5E9),
+                        color = PrimaryBlueLight,
                         shape = RoundedCornerShape(4.dp)
                     ) {
                         Text(
                             text = "Verified",
-                            color = Color(0xFF2E7D32),
+                            color = PrimaryBlue,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.ExtraBold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -172,7 +175,7 @@ fun PayoutStreamItem(transaction: Transaction) {
                 text = String.format("+KSh %,.2f", transaction.amountInCents / 100.0),
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 17.sp,
-                color = Color(0xFF006D3E)
+                color = PrimaryBlue
             )
         }
     }
@@ -213,7 +216,7 @@ fun FundingProgressCard(
                 CircularProgressIndicator(
                     progress = { progress },
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFF0F9D58),
+                    color = PrimaryBlue,
                     strokeWidth = 18.dp,
                     trackColor = Color(0xFFF1F4F9),
                     strokeCap = StrokeCap.Round,
@@ -226,7 +229,7 @@ fun FundingProgressCard(
                             fontSize = 32.sp,
                             fontWeight = FontWeight.ExtraBold
                         ),
-                        color = Color(0xFF00391C)
+                        color = PrimaryBlueDark
                     )
                     Text(
                         text = stringResource(
@@ -244,7 +247,7 @@ fun FundingProgressCard(
             Spacer(modifier = Modifier.height(32.dp))
 
             Surface(
-                color = Color(0xFF006D3E).copy(alpha = 0.08f),
+                color = PrimaryBlue.copy(alpha = 0.08f),
                 shape = RoundedCornerShape(100.dp),
             ) {
                 Row(
@@ -255,14 +258,14 @@ fun FundingProgressCard(
                         painter = painterResource(id = R.drawable.ic_trending_up),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
-                        tint = Color(0xFF006D3E)
+                        tint = PrimaryBlue
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = stringResource(R.string.funded_percentage, (progress * 100).toInt()),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color(0xFF006D3E)
+                        color = PrimaryBlue
                     )
                 }
             }

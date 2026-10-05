@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.wellme.theme.EmeraldGreen
+import com.example.wellme.theme.PrimaryBlue
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,7 +68,7 @@ fun PersonalDetailsScreen(
                 }
                 else -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = EmeraldGreen)
+                        CircularProgressIndicator(color = PrimaryBlue)
                     }
                 }
             }
@@ -292,7 +292,7 @@ fun HelpSupportScreen(onBack: () -> Unit) {
             Text(
                 text = "Contact support at support@wellme.com",
                 style = MaterialTheme.typography.bodyMedium,
-                color = EmeraldGreen,
+                color = PrimaryBlue,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
@@ -332,7 +332,7 @@ fun DetailOptionItem(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = EmeraldGreen,
+                        tint = PrimaryBlue,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -361,7 +361,7 @@ fun DetailOptionItem(
                     onCheckedChange = { isChecked = it },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
-                        checkedTrackColor = EmeraldGreen,
+                        checkedTrackColor = PrimaryBlue,
                         uncheckedThumbColor = Color.Gray,
                         uncheckedTrackColor = Color.LightGray
                     )

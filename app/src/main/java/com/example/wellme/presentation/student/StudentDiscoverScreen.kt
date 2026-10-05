@@ -109,10 +109,10 @@ fun MerchantDiscoveryCard(
             Surface(
                 modifier = Modifier.size(60.dp),
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFE8F5E9)
+                color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 AsyncImage(
-                    model = "https://ui-avatars.com/api/?name=${merchant.businessName}&background=006D3E&color=fff",
+                    model = "https://ui-avatars.com/api/?name=${merchant.businessName}&background=2563EB&color=fff",
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop

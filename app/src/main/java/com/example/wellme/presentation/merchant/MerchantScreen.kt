@@ -20,6 +20,8 @@ import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.model.Transaction
 import com.example.wellme.presentation.merchant.MerchantDashboard
 import com.example.wellme.presentation.merchant.RequestCapitalTab
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueLight
 
 @Composable
 fun MerchantScreen(
@@ -54,7 +56,7 @@ fun MerchantScreen(
                         android.util.Log.d("MerchantScreen", "FAB Clicked")
                         onNavigateToAddItem()
                     },
-                    containerColor = Color(0xFF006D3E),
+                    containerColor = PrimaryBlue,
                     contentColor = Color.White,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
@@ -141,13 +143,13 @@ fun MerchantBottomNavigation(
                     Text(
                         text = label,
                         fontSize = 12.sp,
-                        color = if (isSelected) Color(0xFF006D3E) else Color.Gray
+                        color = if (isSelected) PrimaryBlue else Color.Gray
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF006D3E),
+                    selectedIconColor = PrimaryBlue,
                     unselectedIconColor = Color.Gray,
-                    indicatorColor = Color(0xFFE8F5E9)
+                    indicatorColor = PrimaryBlueLight
                 )
             )
         }
