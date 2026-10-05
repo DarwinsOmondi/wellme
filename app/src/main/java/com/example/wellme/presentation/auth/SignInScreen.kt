@@ -74,7 +74,7 @@ fun SignInScreenContent(
     isLoading: Boolean,
     onSignInClick: () -> Unit,
     onNavigateToSignUp: () -> Unit,
-    onBrowseAsGuest: () -> Unit,
+    onBrowseAsGuest: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isButtonEnabled = email.isNotBlank() && !isLoading

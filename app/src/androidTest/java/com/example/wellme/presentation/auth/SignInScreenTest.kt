@@ -23,6 +23,7 @@ class SignInScreenTest {
                     isLoading = false,
                     onSignInClick = {},
                     onNavigateToSignUp = {},
+                    onBrowseAsGuest = {}
                 )
             }
         }
@@ -34,6 +35,7 @@ class SignInScreenTest {
         composeTestRule.onNodeWithText(welcomeText).assertExists()
         composeTestRule.onNodeWithText(emailLabel).assertExists()
         composeTestRule.onNodeWithText(buttonText).assertExists()
+        composeTestRule.onNodeWithText("Browse as Guest").assertExists()
     }
 
     @Test
@@ -47,6 +49,7 @@ class SignInScreenTest {
                     isLoading = false,
                     onSignInClick = {},
                     onNavigateToSignUp = {},
+                    onBrowseAsGuest = {}
                 )
             }
         }
@@ -67,6 +70,7 @@ class SignInScreenTest {
                     isLoading = false,
                     onSignInClick = {},
                     onNavigateToSignUp = {},
+                    onBrowseAsGuest = {}
                 )
             }
         }
@@ -84,6 +88,7 @@ class SignInScreenTest {
                     isLoading = false,
                     onSignInClick = {},
                     onNavigateToSignUp = {},
+                    onBrowseAsGuest = {}
                 )
             }
         }
@@ -101,6 +106,7 @@ class SignInScreenTest {
                     isLoading = true,
                     onSignInClick = {},
                     onNavigateToSignUp = {},
+                    onBrowseAsGuest = {}
                 )
             }
         }
@@ -120,6 +126,7 @@ class SignInScreenTest {
                     isLoading = false,
                     onSignInClick = { clicked = true },
                     onNavigateToSignUp = {},
+                    onBrowseAsGuest = {}
                 )
             }
         }
@@ -139,6 +146,7 @@ class SignInScreenTest {
                     isLoading = false,
                     onSignInClick = {},
                     onNavigateToSignUp = { navigated = true },
+                    onBrowseAsGuest = {}
                 )
             }
         }
@@ -146,5 +154,25 @@ class SignInScreenTest {
         val signUpAction = composeTestRule.activity.getString(R.string.sign_up_action)
         composeTestRule.onNodeWithText(signUpAction, substring = true).performClick()
         assert(navigated)
+    }
+
+    @Test
+    fun signInScreen_browseAsGuestTriggersCallback() {
+        var guestClicked = false
+        composeTestRule.setContent {
+            WellMeTheme {
+                SignInScreenContent(
+                    email = "",
+                    onEmailChange = {},
+                    isLoading = false,
+                    onSignInClick = {},
+                    onNavigateToSignUp = {},
+                    onBrowseAsGuest = { guestClicked = true }
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Browse as Guest").performClick()
+        assert(guestClicked)
     }
 }
