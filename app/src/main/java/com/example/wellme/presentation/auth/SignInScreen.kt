@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import com.example.wellme.R
 // removed EmeraldGreen import
 import com.example.wellme.theme.WellMeTheme
+import com.example.wellme.theme.appTextFieldColors
 
 @Composable
 fun SignInScreen(
@@ -149,30 +150,22 @@ fun SignInScreenContent(
                 value = email,
                 onValueChange = onEmailChange,
                 modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.bodyLarge,
                 placeholder = {
                     Text(
-                        text = stringResource(R.string.email_hint),
-                        color = Color(0xFF8E9199)
+                        text = stringResource(R.string.email_hint)
                     )
                 },
                 leadingIcon = {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_email),
                         contentDescription = null,
-                        tint = Color(0xFF44474E),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 },
                 shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    cursorColor = MaterialTheme.colorScheme.primary
-                ),
+                colors = appTextFieldColors(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )

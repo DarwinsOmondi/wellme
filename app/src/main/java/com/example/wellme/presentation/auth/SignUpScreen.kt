@@ -300,7 +300,8 @@ fun SignUpInputField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(text = placeholder, color = Color.LightGray) },
+            textStyle = MaterialTheme.typography.bodyLarge,
+            placeholder = { Text(text = placeholder) },
             visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
             trailingIcon = {
                 if (isPassword) {
@@ -310,22 +311,14 @@ fun SignUpInputField(
                                 id = if (passwordVisible) R.drawable.ic_visibility else R.drawable.ic_visibility_off
                             ),
                             contentDescription = stringResource(id = R.string.visibility_toggle_content_description),
-                            tint = Color.LightGray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             },
             keyboardOptions = keyboardOptions,
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                cursorColor = MaterialTheme.colorScheme.primary
-            )
+            colors = com.example.wellme.theme.appTextFieldColors()
         )
     }
 }

@@ -2,6 +2,7 @@ package com.example.wellme.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
@@ -24,7 +25,9 @@ private val DarkColorScheme = darkColorScheme(
     background = AppBlack,
     surface = Color(0xFF1E293B),
     onBackground = AppWhiteOff,
-    onSurface = AppWhiteOff
+    onSurface = AppWhiteOff,
+    outline = Color(0xFF475569),
+    onSurfaceVariant = Color(0xFF94A3B8)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -44,7 +47,24 @@ private val LightColorScheme = lightColorScheme(
     background = AppWhiteOff,
     surface = AppWhite,
     onBackground = AppBlack,
-    onSurface = AppBlack
+    onSurface = AppBlack,
+    outline = Color(0xFFCBD5E1),
+    onSurfaceVariant = Color(0xFF64748B)
+)
+
+@Composable
+fun appTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedContainerColor = MaterialTheme.colorScheme.surface,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+    focusedLabelColor = MaterialTheme.colorScheme.primary,
+    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    focusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+    unfocusedPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+    cursorColor = MaterialTheme.colorScheme.primary
 )
 
 @Composable
