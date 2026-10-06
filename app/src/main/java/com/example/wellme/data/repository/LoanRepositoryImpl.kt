@@ -1,22 +1,28 @@
 package com.example.wellme.data.repository
 
+import android.util.Log
 import com.example.wellme.domain.model.MerchantLoanDto
 import com.example.wellme.domain.repository.LoanRepository
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.Realtime
-import kotlinx.coroutines.delay
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.decodeRecord
+import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import javax.inject.Inject
-import kotlin.time.Duration.Companion.seconds
 
 class LoanRepositoryImpl @Inject constructor(
     private val postgrest: Postgrest,
     private val realtime: Realtime
 ) : LoanRepository {
+
+    private val TAG = "LoanRepositoryImpl"
 
     override suspend fun requestLoan(merchantId: String, amountInCents: Long): Result<String> {
         return try {
@@ -45,36 +51,50 @@ class LoanRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun markLoanAsDisbursed(merchantId: String): Result<Unit> {
+        return try {
+            postgrest.from("merchant_loans")
+                .update(mapOf("status" to "DISBURSED")) {
+                    filter {
+                        eq("merchant_id", merchantId)
+                        eq("status", "PENDING")
+                    }
+                }
+            Log.d(TAG, "Marked merchant $merchantId loans as DISBURSED")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to mark loan as disbursed", e)
+            Result.failure(e)
+        }
+    }
+
     override fun observeLoanLifecycle(loanId: String): Flow<MerchantLoanDto> {
-        return flow {
-            emit(
+        return try {
+            val channel = realtime.channel("loan_tracking_$loanId")
+            val flow = channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
+                table = "merchant_loans"
+            }
+            flow.map { action -> 
+                action.decodeRecord<MerchantLoanDto>()
+            }.catch {
+                emit(
+                    MerchantLoanDto(
+                        id = loanId,
+                        merchantId = "",
+                        amountRequestedInCents = 0L,
+                        status = "PENDING",
+                        conversationId = "REQ-$loanId",
+                        createdAt = System.currentTimeMillis().toString()
+                    )
+                )
+            }
+        } catch (_: Throwable) {
+            flowOf(
                 MerchantLoanDto(
                     id = loanId,
                     merchantId = "",
                     amountRequestedInCents = 0L,
                     status = "PENDING",
-                    conversationId = "REQ-$loanId",
-                    createdAt = System.currentTimeMillis().toString()
-                )
-            )
-            delay(3.5.seconds)
-            emit(
-                MerchantLoanDto(
-                    id = loanId,
-                    merchantId = "",
-                    amountRequestedInCents = 0L,
-                    status = "DISBURSED",
-                    conversationId = "REQ-$loanId",
-                    createdAt = System.currentTimeMillis().toString()
-                )
-            )
-        }.catch {
-            emit(
-                MerchantLoanDto(
-                    id = loanId,
-                    merchantId = "",
-                    amountRequestedInCents = 0L,
-                    status = "DISBURSED",
                     conversationId = "REQ-$loanId",
                     createdAt = System.currentTimeMillis().toString()
                 )
