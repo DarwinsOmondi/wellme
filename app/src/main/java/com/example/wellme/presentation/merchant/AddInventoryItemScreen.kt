@@ -2,16 +2,11 @@ package com.example.wellme.presentation.merchant
 
 import android.content.Context
 import android.net.Uri
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -20,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
@@ -55,9 +49,8 @@ fun AddInventoryItemScreen(
     modifier: Modifier = Modifier
 ) {
     AddInventoryItemContent(
-        onAddItem = { item ->
-            viewModel.addItem(item)
-            onBack()
+        onAddItem = { item, onComplete ->
+            viewModel.addItem(item, onComplete)
         },
         onBack = onBack,
         modifier = modifier
@@ -67,7 +60,7 @@ fun AddInventoryItemScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddInventoryItemContent(
-    onAddItem: (MerchantItem) -> Unit,
+    onAddItem: (MerchantItem, () -> Unit) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -80,6 +73,7 @@ fun AddInventoryItemContent(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
     var showImageSourceDialog by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -386,7 +380,8 @@ fun AddInventoryItemContent(
 
             Button(
                 onClick = {
-                    if (!isValid) return@Button
+                    if (!isValid || isSaving) return@Button
+                    isSaving = true
                     val priceVal = price.toDoubleOrNull() ?: 0.0
                     val stockVal = stock.toIntOrNull() ?: 0
                     onAddItem(
@@ -400,9 +395,12 @@ fun AddInventoryItemContent(
                             imageUrl = selectedImageUri?.toString(),
                             merchantId = ""
                         )
-                    )
+                    ) {
+                        isSaving = false
+                        onBack()
+                    }
                 },
-                enabled = isValid,
+                enabled = isValid && !isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -412,21 +410,29 @@ fun AddInventoryItemContent(
                     disabledContainerColor = PrimaryBlue.copy(alpha = 0.4f)
                 )
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_check_circle_outline),
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.save_product_button),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_check_circle_outline),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.save_product_button),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -503,7 +509,7 @@ fun Modifier.drawDashedBorder(
 fun AddInventoryItemScreenPreview() {
     WellMeTheme {
         AddInventoryItemContent(
-            onAddItem = {},
+            onAddItem = { _, onComplete -> onComplete() },
             onBack = {}
         )
     }

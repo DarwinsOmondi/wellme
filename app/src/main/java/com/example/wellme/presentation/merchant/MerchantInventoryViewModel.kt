@@ -66,13 +66,15 @@ class MerchantInventoryViewModel @Inject constructor(
     }
 
     // --- Actions ---
-    fun addItem(item: MerchantItem) {
+    fun addItem(item: MerchantItem, onComplete: () -> Unit = {}) {
         val activeMerchantId = merchantId.ifBlank { "m1" }
         viewModelScope.launch {
             try {
                 inventoryRepository.upsertItem(item.copy(merchantId = activeMerchantId))
             } catch (e: Throwable) {
                 android.util.Log.e("MerchantInventoryVM", "Error adding item", e)
+            } finally {
+                onComplete()
             }
         }
     }
