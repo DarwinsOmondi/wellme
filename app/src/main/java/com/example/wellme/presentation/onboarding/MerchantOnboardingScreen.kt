@@ -84,7 +84,7 @@ fun MerchantOnboardingContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             Surface(
-                color = Color(0xFFE8F5E9),
+                color = MaterialTheme.colorScheme.primaryContainer,
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(

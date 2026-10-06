@@ -137,14 +137,14 @@ fun MerchantDiscoveryCard(
                         Icon(
                             imageVector = Icons.Default.Verified,
                             contentDescription = "Verified",
-                            tint = Color(0xFF4CAF50),
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
                     }
                 }
                 Text(
                     text = "${(merchant.discountTier * 100).toInt()}% Instant Discount",
-                    color = Color(0xFF006D3E),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )

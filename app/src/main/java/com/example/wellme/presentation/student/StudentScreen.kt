@@ -293,7 +293,7 @@ fun StudentHeader(
             text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF006D3E)
+            color = MaterialTheme.colorScheme.primary
         )
 
         IconButton(onClick = onNotificationClick) {
@@ -318,7 +318,7 @@ fun BalanceCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF00391C))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
     ) {
         Column(
             modifier = Modifier.padding(24.dp)
@@ -378,7 +378,10 @@ fun BalanceCard(
                         .weight(1f)
                         .height(48.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_add),
@@ -397,7 +400,7 @@ fun BalanceCard(
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .clickable(onClick = onMoreClick),
-                    color = Color(0xFF006D3E)
+                    color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
@@ -420,7 +423,7 @@ fun SecurityInfoBar(modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .padding(vertical = 16.dp),
         shape = RoundedCornerShape(12.dp),
-        color = Color(0xFFE0F2F1)
+        color = MaterialTheme.colorScheme.primaryContainer
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -430,13 +433,13 @@ fun SecurityInfoBar(modifier: Modifier = Modifier) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_lock),
                 contentDescription = null,
-                tint = Color(0xFF006D3E),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.secured_for_food_access),
-                color = Color(0xFF006D3E),
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -464,7 +467,7 @@ fun RecentActivitySection(
             TextButton(onClick = onSeeAllClick) {
                 Text(
                     text = stringResource(R.string.see_all),
-                    color = Color(0xFF006D3E),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -511,7 +514,7 @@ fun TransactionItem(
                     .size(48.dp)
                     .clip(CircleShape)
                     .background(
-                        if (transaction.merchantId == "mpesa") Color(0xFFE8F5E9)
+                        if (transaction.merchantId == "mpesa") MaterialTheme.colorScheme.primaryContainer
                         else Color.LightGray.copy(alpha = 0.3f)
                     ),
                 contentAlignment = Alignment.Center
@@ -522,7 +525,7 @@ fun TransactionItem(
                              else R.drawable.ic_restaurant
                     ),
                     contentDescription = null,
-                    tint = if (transaction.merchantId == "mpesa") Color(0xFF388E3C)
+                    tint = if (transaction.merchantId == "mpesa") MaterialTheme.colorScheme.primary
                            else Color.Gray,
                     modifier = Modifier.size(24.dp)
                 )
@@ -577,7 +580,7 @@ fun TransactionItem(
                     ),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = if (transaction.type == TransactionType.STIPEND) Color(0xFF388E3C) else Color.Black
+                    color = if (transaction.type == TransactionType.STIPEND) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
                 Icon(
                     painter = painterResource(
@@ -586,7 +589,7 @@ fun TransactionItem(
                         else R.drawable.ic_arrow_downward
                     ),
                     contentDescription = null,
-                    tint = if (transaction.type == TransactionType.STIPEND) Color(0xFF388E3C) else Color(
+                    tint = if (transaction.type == TransactionType.STIPEND) MaterialTheme.colorScheme.primary else Color(
                         0xFFD32F2F
                     ),
                     modifier = Modifier.size(16.dp)
@@ -607,7 +610,7 @@ fun BottomActionButton(
             .fillMaxWidth()
             .height(64.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -692,7 +695,7 @@ fun DepositDialog(
                     }
                 },
                 enabled = amount.isNotBlank() && phone.length >= 10,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Proceed")
             }
@@ -727,7 +730,7 @@ fun NotificationsDialog(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_notifications),
                     contentDescription = null,
-                    tint = Color(0xFF006D3E),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -763,7 +766,7 @@ fun NotificationsDialog(
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Close")
             }
@@ -791,16 +794,16 @@ fun WalletQuickActionsDialog(
                         .fillMaxWidth()
                         .clickable { onDepositClick() },
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFE8F5E9)
+                    color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = null, tint = Color(0xFF006D3E))
+                        Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Deposit via M-Pesa", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF006D3E))
+                            Text("Deposit via M-Pesa", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
                             Text("Top up student wallet instantly", fontSize = 12.sp, color = Color.Gray)
                         }
                     }
@@ -897,7 +900,7 @@ fun AllTransactionsDialog(
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Close")
             }
@@ -909,7 +912,7 @@ fun AllTransactionsDialog(
 fun DiscoverVendorsBanner(onClick: () -> Unit) {
     com.example.wellme.theme.NeumorphicCard(
         modifier = Modifier.fillMaxWidth(),
-        backgroundColor = Color(0xFF006D3E),
+        backgroundColor = MaterialTheme.colorScheme.primary,
         cornerRadius = 20.dp,
         elevation = 6.dp,
         onClick = onClick

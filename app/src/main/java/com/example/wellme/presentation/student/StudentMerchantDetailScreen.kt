@@ -166,7 +166,7 @@ fun StudentMerchantDetailContent(
 fun MerchantSummaryBar(merchant: MerchantProfile) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color(0xFF006D3E).copy(alpha = 0.05f)
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -175,7 +175,7 @@ fun MerchantSummaryBar(merchant: MerchantProfile) {
             Surface(
                 modifier = Modifier.size(48.dp),
                 shape = CircleShape,
-                color = Color(0xFF006D3E)
+                color = MaterialTheme.colorScheme.primary
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
@@ -191,7 +191,7 @@ fun MerchantSummaryBar(merchant: MerchantProfile) {
                 Text(
                     text = "WellMe Registered Vendor",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color(0xFF006D3E),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -236,7 +236,7 @@ fun StudentInventoryItemCard(
                 Text(text = item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(
                     text = String.format(Locale.getDefault(), "KSh %,.2f", item.price),
-                    color = Color(0xFF006D3E),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -258,7 +258,7 @@ fun StudentInventoryItemCard(
                 }
                 
                 IconButton(onClick = onAdd, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.AddCircle, contentDescription = null, tint = Color(0xFF006D3E))
+                    Icon(Icons.Default.AddCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -274,7 +274,7 @@ fun SwipeToLeftQr(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFE8F5E9))
+            .background(MaterialTheme.colorScheme.primaryContainer)
             .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -287,7 +287,7 @@ fun SwipeToLeftQr(
                 text = "<< SWIPE TO GENERATE QR",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = Color(0xFF006D3E),
+                color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 0.5.sp
             )
         }
@@ -319,7 +319,7 @@ fun SwipeToLeftQr(
                 .size(60.dp)
                 .clip(CircleShape)
                 .clickable { onSwipeComplete() },
-            color = Color(0xFF006D3E),
+            color = MaterialTheme.colorScheme.primary,
             shadowElevation = 4.dp
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -386,7 +386,7 @@ fun PaymentQrDialog(
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF006D3E))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Done")
             }
