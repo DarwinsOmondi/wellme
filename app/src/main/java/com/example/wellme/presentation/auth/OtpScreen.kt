@@ -133,10 +133,13 @@ fun OtpScreenContent(
                 )
             },
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFFF8F9FB),
-                unfocusedContainerColor = Color(0xFFF8F9FB),
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                cursorColor = MaterialTheme.colorScheme.primary
             )
         )
 

@@ -113,10 +113,13 @@ fun RequestCapitalTab(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryBlue,
-                        unfocusedBorderColor = Color(0xFFE0E0E0),
-                        focusedContainerColor = Color(0xFFF8F9FB),
-                        unfocusedContainerColor = Color(0xFFF8F9FB)
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     ),
                     singleLine = true
                 )
