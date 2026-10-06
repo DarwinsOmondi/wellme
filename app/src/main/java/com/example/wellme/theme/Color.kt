@@ -2,40 +2,50 @@ package com.example.wellme.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Minimalist Modern Palette (Clean Professional Blue & Slate)
-val PrimaryBlue = Color(0xFF2563EB)           // Modern clean blue accent
-val PrimaryBlueLight = Color(0xFFEFF6FF)       // Soft blue tint
-val PrimaryBlueDark = Color(0xFF1E40AF)        // Deep blue
-val NeutralDark = Color(0xFF0F172A)            // Slate 900
-val NeutralLight = Color(0xFFF8FAFC)           // Slate 50
+// Strict App Palette: Blue, Black, White, Red, Gold
+val AppBlue = Color(0xFF2563EB)         // Blue Primary
+val AppBlueDark = Color(0xFF1E40AF)     // Dark Blue
+val AppBlueLight = Color(0xFFEFF6FF)    // Soft Blue Tint
 
-// Backward compatibility aliases mapping old green/neumorphic colors to minimalist palette
-val EmeraldGreen = PrimaryBlue
-val EmeraldLight = PrimaryBlueLight
-val EmeraldDark = NeutralDark
-val TealAccent = Color(0xFF0EA5E9)             // Sky blue
-val GoldAccent = Color(0xFFD97706)             // Amber
+val AppBlack = Color(0xFF0F172A)        // Slate / Neutral Dark
+val AppBlackPure = Color(0xFF000000)    // Pure Black
 
-// Clean Minimalist Light Theme
-val LightBackground = Color(0xFFF8FAFC)        // Crisp off-white / light slate
-val LightSurface = Color(0xFFFFFFFF)           // Pure White
-val LightOnPrimary = Color(0xFFFFFFFF)
-val LightOnBackground = Color(0xFF0F172A)
-val LightOnSurface = Color(0xFF0F172A)
+val AppWhite = Color(0xFFFFFFFF)        // Pure White
+val AppWhiteOff = Color(0xFFF8FAFC)     // Crisp Background White
 
-// Clean Minimalist Dark Theme
-val DarkBackground = Color(0xFF0F172A)         // Slate 900
-val DarkSurface = Color(0xFF1E293B)            // Slate 800
-val DarkOnPrimary = Color(0xFFFFFFFF)
-val DarkOnBackground = Color(0xFFF8FAFC)
-val DarkOnSurface = Color(0xFFF8FAFC)
-val DarkPrimaryContainer = Color(0xFF1E40AF)
-val DarkOnPrimaryContainer = Color(0xFFEFF6FF)
+val AppRed = Color(0xFFEF4444)          // Red Warning / Error / Destructive
+val AppRedDark = Color(0xFF991B1B)      // Dark Red
+val AppRedLight = Color(0xFFFEF2F2)     // Light Red Tint
 
-// Neumorphic legacy fallback colors mapped to clean minimalist values
-val NeumorphicLightBg = Color(0xFFFFFFFF)
-val NeumorphicLightTopShadow = Color(0xFFFFFFFF)
-val NeumorphicLightBottomShadow = Color(0xFFE2E8F0)
-val NeumorphicDarkBg = Color(0xFF1E293B)
-val NeumorphicDarkTopShadow = Color(0xFF1E293B)
-val NeumorphicDarkBottomShadow = Color(0xFF0F172A)
+val AppGold = Color(0xFFF59E0B)         // Gold Accent / Highlight
+val AppGoldDark = Color(0xFFB45309)     // Dark Gold
+val AppGoldLight = Color(0xFFFFFBEB)    // Light Gold Tint
+
+// Backward compatibility aliases strictly mapped to the allowed 5-color palette
+val PrimaryBlue = AppBlue
+val PrimaryBlueLight = AppBlueLight
+val PrimaryBlueDark = AppBlueDark
+val NeutralDark = AppBlack
+val NeutralLight = AppWhiteOff
+
+val EmeraldGreen = AppBlue
+val EmeraldLight = AppBlueLight
+val EmeraldDark = AppBlack
+val TealAccent = AppBlue
+val GoldAccent = AppGold
+
+// Light Mode Palette
+val LightBackground = AppWhiteOff
+val LightSurface = AppWhite
+val LightOnPrimary = AppWhite
+val LightOnBackground = AppBlack
+val LightOnSurface = AppBlack
+
+// Dark Mode Palette
+val DarkBackground = AppBlack
+val DarkSurface = Color(0xFF1E293B)     // Dark Card Surface
+val DarkOnPrimary = AppWhite
+val DarkOnBackground = AppWhiteOff
+val DarkOnSurface = AppWhiteOff
+val DarkPrimaryContainer = AppBlueDark
+val DarkOnPrimaryContainer = AppWhite

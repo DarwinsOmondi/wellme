@@ -14,6 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.WellMe"
         android:windowSoftInputMode="adjustResize">
+        <meta-data
+            android:name="android.support.FILE_PROVIDER_PATHS"
+            android:resource="@xml/file_paths" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

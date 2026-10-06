@@ -31,6 +31,8 @@ import com.example.wellme.domain.model.Transaction
 import com.example.wellme.domain.model.TransactionType
 import com.example.wellme.presentation.common.BottomSheetContent
 import com.example.wellme.presentation.common.ScannerOverlay
+import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.PrimaryBlueDark
 import com.example.wellme.theme.WellMeTheme
 import com.example.wellme.util.GuestSession
 import java.util.Locale
@@ -273,7 +275,7 @@ fun StudentHeader(
                 .clip(CircleShape)
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(Color(0xFF4CAF50), Color(0xFF1B5E20))
+                        colors = listOf(PrimaryBlue, PrimaryBlueDark)
                     )
                 )
                 .clickable(onClick = onProfileClick),

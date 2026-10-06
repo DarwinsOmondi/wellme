@@ -158,7 +158,7 @@ fun LegalDocumentationContent(
                     title = stringResource(id = R.string.national_id_card),
                     description = stringResource(id = R.string.national_id_card_desc),
                     icon = Icons.Default.ContactPage,
-                    iconBackgroundColor = Color(0xFF2DE3A3).copy(alpha = 0.5f),
+                    iconBackgroundColor = Color(0xFFEFF6FF),
                     additionalInfo = stringResource(id = R.string.accepted_files_info),
                     selectedFileName = nationalIdUri?.lastPathSegment,
                     onSelectFile = { onFileSelect("national_id") }
@@ -218,7 +218,7 @@ fun LegalDocumentationContent(
                     Spacer(modifier = Modifier.height(32.dp))
                     Surface(
                         shape = CircleShape,
-                        color = Color(0xFF065F46),
+                        color = Color(0xFF2563EB),
                         modifier = Modifier.size(88.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {

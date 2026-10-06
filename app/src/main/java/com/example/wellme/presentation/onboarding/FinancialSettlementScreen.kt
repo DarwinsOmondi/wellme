@@ -179,7 +179,7 @@ fun FinancialSettlementContent(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                color = Color(0xFF2DE3A3).copy(alpha = 0.4f)
+                color = Color(0xFFEFF6FF)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),

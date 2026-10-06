@@ -204,7 +204,7 @@ fun StudentVerificationContent(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = Color(0xFF2DE3A3).copy(alpha = 0.5f),
+                        color = Color(0xFFEFF6FF),
                         modifier = Modifier.size(72.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
