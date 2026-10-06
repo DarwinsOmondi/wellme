@@ -1,6 +1,5 @@
 package com.example.wellme.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.darkColorScheme
@@ -22,12 +21,12 @@ private val DarkColorScheme = darkColorScheme(
     onError = AppWhite,
     errorContainer = AppRedDark,
     onErrorContainer = AppRedLight,
-    background = AppBlack,
-    surface = Color(0xFF1E293B),
-    onBackground = AppWhiteOff,
-    onSurface = AppWhiteOff,
-    outline = Color(0xFF475569),
-    onSurfaceVariant = Color(0xFF94A3B8)
+    background = AppWhiteOff,
+    surface = AppWhite,
+    onBackground = AppBlack,
+    onSurface = AppBlack,
+    outline = Color(0xFFCBD5E1),
+    onSurfaceVariant = Color(0xFF64748B)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -69,7 +68,7 @@ fun appTextFieldColors() = OutlinedTextFieldDefaults.colors(
 
 @Composable
 fun WellMeTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false, // Force clean Light Mode app-wide
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme

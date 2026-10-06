@@ -147,10 +147,8 @@ fun StudentContent(
                     }
                 )
 
-                SecurityInfoBar()
-
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 DiscoverVendorsBanner(onClick = onDiscoverClick)
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -454,36 +452,6 @@ fun BalanceCard(
     }
 }
 
-@Composable
-fun SecurityInfoBar(modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.primaryContainer
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_lock),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = stringResource(R.string.secured_for_food_access),
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-        }
-    }
-}
 
 @Composable
 fun RecentActivitySection(
@@ -515,7 +483,9 @@ fun RecentActivitySection(
 
         if (transactions.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -560,11 +530,11 @@ fun TransactionItem(
                 Icon(
                     painter = painterResource(
                         id = if (transaction.merchantId == "mpesa") R.drawable.ic_account_balance
-                             else R.drawable.ic_restaurant
+                        else R.drawable.ic_restaurant
                     ),
                     contentDescription = null,
                     tint = if (transaction.merchantId == "mpesa") MaterialTheme.colorScheme.primary
-                           else Color.Gray,
+                    else Color.Gray,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -574,7 +544,7 @@ fun TransactionItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = if (transaction.merchantId == "mpesa") stringResource(R.string.mpesa_top_up)
-                           else "Merchant: ${transaction.merchantId?.take(8)?.uppercase() ?: "..."}",
+                    else "Merchant: ${transaction.merchantId?.take(8)?.uppercase() ?: "..."}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
@@ -593,7 +563,12 @@ fun TransactionItem(
                             fontSize = 12.sp
                         )
                     } else {
-                        val dateFormat = remember { java.text.SimpleDateFormat("MMM dd, hh:mm a", java.util.Locale.getDefault()) }
+                        val dateFormat = remember {
+                            java.text.SimpleDateFormat(
+                                "MMM dd, hh:mm a",
+                                java.util.Locale.getDefault()
+                            )
+                        }
                         Text(
                             text = dateFormat.format(java.util.Date(transaction.timestamp)),
                             color = Color.Gray,
@@ -752,7 +727,11 @@ fun NotificationsDialog(
 ) {
     val sampleNotifications = listOf(
         Triple("M-Pesa Top Up Received", "KSh 1,000 deposited to student wallet.", "10m ago"),
-        Triple("Vendor Discount Applied", "15% student discount processed at Campus Cafe.", "2h ago"),
+        Triple(
+            "Vendor Discount Applied",
+            "15% student discount processed at Campus Cafe.",
+            "2h ago"
+        ),
         Triple("Allowance Verified", "Daily food allowance verified by Campus Admin.", "1d ago")
     )
 
@@ -790,7 +769,12 @@ fun NotificationsDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF1A1C1E))
+                                Text(
+                                    title,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF1A1C1E)
+                                )
                                 Text(time, fontSize = 11.sp, color = Color.Gray)
                             }
                             Spacer(modifier = Modifier.height(4.dp))
@@ -839,11 +823,24 @@ fun WalletQuickActionsDialog(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(painter = painterResource(id = R.drawable.ic_qr_code), contentDescription = null, tint = Color.White)
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_qr_code),
+                            contentDescription = null,
+                            tint = Color.White
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Pay / Scan QR Code", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White)
-                            Text("Pay vendors & food stalls", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                            Text(
+                                "Pay / Scan QR Code",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = Color.White
+                            )
+                            Text(
+                                "Pay vendors & food stalls",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
                         }
                     }
                 }
@@ -859,11 +856,24 @@ fun WalletQuickActionsDialog(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(painter = painterResource(id = R.drawable.ic_add), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_add),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Deposit via M-Pesa", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
-                            Text("Top up student wallet instantly", fontSize = 12.sp, color = Color.Gray)
+                            Text(
+                                "Deposit via M-Pesa",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                "Top up student wallet instantly",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
                         }
                     }
                 }
@@ -880,10 +890,19 @@ fun WalletQuickActionsDialog(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(painter = painterResource(id = R.drawable.ic_refresh), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_refresh),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Refresh Wallet Balance", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(
+                                "Refresh Wallet Balance",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
                             Text("Sync latest transactions", fontSize = 12.sp, color = Color.Gray)
                         }
                     }
@@ -901,11 +920,24 @@ fun WalletQuickActionsDialog(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(painter = painterResource(id = R.drawable.ic_security), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_security),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Wallet Security & Profile", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
-                            Text("Manage credentials and limits", fontSize = 12.sp, color = Color.Gray)
+                            Text(
+                                "Wallet Security & Profile",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "Manage credentials and limits",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
                         }
                     }
                 }
@@ -945,7 +977,12 @@ fun AllTransactionsDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (transactions.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text("No transaction history available.", color = Color.Gray)
                     }
                 } else {
