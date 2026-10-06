@@ -20,8 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.KeyboardOptions
 import com.example.wellme.R
-import com.example.wellme.theme.EmeraldDark
 import com.example.wellme.theme.WellMeTheme
+import com.example.wellme.theme.appTextFieldColors
 
 @Composable
 fun StudentOnboardingScreen(
@@ -66,8 +66,7 @@ fun StudentOnboardingContent(
 
     Scaffold(
         topBar = {
-            OnboardingTopBar(
-                title = stringResource(R.string.fin_community),
+            MerchantOnboardingTopBar(
                 onBackClick = onBackClick,
                 modifier = Modifier.statusBarsPadding()
             )
@@ -141,49 +140,18 @@ fun StudentOnboardingContent(
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = EmeraldDark
+                    containerColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Text(
                     text = stringResource(R.string.continue_to_verification),
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontWeight = FontWeight.Bold
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
-    }
-}
-
-@Composable
-fun OnboardingTopBar(
-    title: String,
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 4.dp, top = 8.dp, end = 8.dp, bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBackClick) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_back_arrow),
-                contentDescription = stringResource(R.string.back_button_content_description),
-                tint = EmeraldDark,
-                modifier = Modifier.size(28.dp)
-            )
-        }
-        Text(
-            text = title,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.Bold,
-            color = EmeraldDark,
-            modifier = Modifier.padding(start = 0.dp)
-        )
     }
 }
 
@@ -194,29 +162,21 @@ fun ProgressSection(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = stringResource(R.string.onboarding_uppercase),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = EmeraldDark
-        )
-        Spacer(modifier = Modifier.height(8.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = stringResource(R.string.personal_details),
-                fontSize = 28.sp,
+                text = stringResource(R.string.onboarding_uppercase),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1C1E)
+                letterSpacing = 1.sp
             )
             Text(
                 text = stepText,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1A1C1E),
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.Gray,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
         }
@@ -226,7 +186,7 @@ fun ProgressSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp),
-            color = EmeraldDark,
+            color = MaterialTheme.colorScheme.primary,
             trackColor = Color(0xFFE1E2EC),
             strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
         )
@@ -262,15 +222,7 @@ fun OnboardingTextField(
             },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                cursorColor = MaterialTheme.colorScheme.primary
-            ),
+            colors = appTextFieldColors(),
             singleLine = true,
             keyboardOptions = keyboardOptions
         )
@@ -284,7 +236,7 @@ fun VerificationInfoBox(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = Color(0xFFF0F4FF),
+        color = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -294,7 +246,7 @@ fun VerificationInfoBox(
             Icon(
                 painter = painterResource(id = R.drawable.ic_security),
                 contentDescription = null,
-                tint = EmeraldDark,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
