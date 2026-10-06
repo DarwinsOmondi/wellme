@@ -367,7 +367,7 @@ fun BalanceCard(
                 Text(
                     text = stringResource(R.string.available_balance),
                     color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
+                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Icon(
