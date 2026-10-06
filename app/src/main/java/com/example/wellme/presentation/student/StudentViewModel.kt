@@ -20,10 +20,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import kotlin.math.roundToLong
-import kotlin.time.Duration.Companion.seconds
 
 sealed interface SheetState {
     object Idle : SheetState
@@ -31,6 +29,13 @@ sealed interface SheetState {
     object Processing : SheetState
     data class Success(val transaction: Transaction) : SheetState
     data class Error(val message: String) : SheetState
+}
+
+sealed interface DepositState {
+    object Idle : DepositState
+    object Processing : DepositState
+    data class Success(val message: String) : DepositState
+    data class Error(val message: String) : DepositState
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -62,6 +67,9 @@ class StudentViewModel @Inject constructor(
 
     private val _sheetState = MutableStateFlow<SheetState>(SheetState.Idle)
     val sheetState: StateFlow<SheetState> = _sheetState.asStateFlow()
+
+    private val _depositState = MutableStateFlow<DepositState>(DepositState.Idle)
+    val depositState: StateFlow<DepositState> = _depositState.asStateFlow()
 
     private val _studentKyc = MutableStateFlow<com.example.wellme.data.remote.model.StudentKyc?>(null)
     val studentKyc: StateFlow<com.example.wellme.data.remote.model.StudentKyc?> = _studentKyc.asStateFlow()
@@ -137,16 +145,16 @@ class StudentViewModel @Inject constructor(
         val amountInCents = (amountInKsh * 100).toLong()
         Log.d(TAG, "initiateDeposit: $amountInKsh KSh to $phoneNumber")
         if (amountInKsh <= 0) {
-            _sheetState.value = SheetState.Error("Please enter an amount greater than 0.")
+            _depositState.value = DepositState.Error("Please enter an amount greater than 0.")
             return
         }
         if (phoneNumber.length < 10) {
-            _sheetState.value = SheetState.Error("Please enter a valid phone number.")
+            _depositState.value = DepositState.Error("Please enter a valid phone number.")
             return
         }
 
         viewModelScope.launch {
-            _sheetState.value = SheetState.Processing
+            _depositState.value = DepositState.Processing
             try {
                 val result = initiateStkPushUseCase(
                     consumerKey = com.example.wellme.BuildConfig.MPESA_CONSUMER_KEY,
@@ -175,28 +183,23 @@ class StudentViewModel @Inject constructor(
                         Log.e(TAG, "Failed to log pending payment", e)
                     }
 
-                    _sheetState.value = SheetState.Success(
-                        Transaction(
-                            transactionId = response.checkoutRequestId,
-                            amountInCents = amountInCents,
-                            originalAmountInCents = amountInCents,
-                            discountAppliedInCents = 0L,
-                            timestamp = System.currentTimeMillis(),
-                            type = TransactionType.STIPEND,
-                            merchantId = "mpesa",
-                            studentId = studentId
-                        )
+                    _depositState.value = DepositState.Success(
+                        "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone to complete your deposit."
                     )
                     refreshWallet()
                 }.onFailure {
                     Log.e(TAG, "Failed to initiate M-Pesa STK Push", it)
-                    _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(it))
+                    _depositState.value = DepositState.Error(ErrorMapper.getUserFriendlyMessage(it))
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "Unexpected error in initiateDeposit", e)
-                _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(e))
+                _depositState.value = DepositState.Error(ErrorMapper.getUserFriendlyMessage(e))
             }
         }
+    }
+
+    fun clearDepositState() {
+        _depositState.value = DepositState.Idle
     }
 
     fun resetScanner() {

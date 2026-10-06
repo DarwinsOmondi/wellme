@@ -49,17 +49,20 @@ fun StudentScreen(
     val wallet by viewModel.wallet.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
     val sheetState by viewModel.sheetState.collectAsState()
+    val depositState by viewModel.depositState.collectAsState()
     val studentKyc by viewModel.studentKyc.collectAsState()
 
     StudentContent(
         wallet = wallet,
         transactions = transactions,
         sheetState = sheetState,
+        depositState = depositState,
         studentKyc = studentKyc,
         onScan = { merchantId, amount -> viewModel.scanMerchant(merchantId, amount) },
         onResetScanner = { viewModel.resetScanner() },
         onConfirmPayment = { viewModel.confirmPayment() },
         onDeposit = { amount, phone -> viewModel.initiateDeposit(amount, phone) },
+        onClearDepositState = { viewModel.clearDepositState() },
         onRefresh = { viewModel.refreshWallet() },
         onProfileClick = onProfileClick,
         onDiscoverClick = onDiscoverClick,
@@ -74,11 +77,13 @@ fun StudentContent(
     wallet: StudentWallet?,
     transactions: List<Transaction>,
     sheetState: SheetState,
+    depositState: DepositState,
     studentKyc: com.example.wellme.data.remote.model.StudentKyc?,
     onScan: (String, Long) -> Unit,
     onResetScanner: () -> Unit,
     onConfirmPayment: () -> Unit,
     onDeposit: (Double, String) -> Unit,
+    onClearDepositState: () -> Unit,
     onRefresh: () -> Unit,
     onProfileClick: () -> Unit = {},
     onDiscoverClick: () -> Unit = {},
@@ -210,9 +215,21 @@ fun StudentContent(
 
         if (showQuickActionsDialog) {
             WalletQuickActionsDialog(
+                onPayClick = {
+                    showQuickActionsDialog = false
+                    if (isGuest) {
+                        showAuthRequiredDialog = true
+                    } else {
+                        isScanning = true
+                    }
+                },
                 onDepositClick = {
                     showQuickActionsDialog = false
-                    showDepositDialog = true
+                    if (isGuest) {
+                        showAuthRequiredDialog = true
+                    } else {
+                        showDepositDialog = true
+                    }
                 },
                 onRefreshClick = {
                     showQuickActionsDialog = false
@@ -776,6 +793,7 @@ fun NotificationsDialog(
 
 @Composable
 fun WalletQuickActionsDialog(
+    onPayClick: () -> Unit,
     onDepositClick: () -> Unit,
     onRefreshClick: () -> Unit,
     onProfileClick: () -> Unit,
@@ -789,6 +807,26 @@ fun WalletQuickActionsDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onPayClick() },
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primary
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(painter = painterResource(id = R.drawable.ic_qr_code), contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Pay / Scan QR Code", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color.White)
+                            Text("Pay vendors & food stalls", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
+                        }
+                    }
+                }
+
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -814,17 +852,17 @@ fun WalletQuickActionsDialog(
                         .fillMaxWidth()
                         .clickable { onRefreshClick() },
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF8F9FB),
-                    border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(painter = painterResource(id = R.drawable.ic_refresh), contentDescription = null, tint = Color.DarkGray)
+                        Icon(painter = painterResource(id = R.drawable.ic_refresh), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Refresh Wallet Balance", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text("Refresh Wallet Balance", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
                             Text("Sync latest transactions", fontSize = 12.sp, color = Color.Gray)
                         }
                     }
@@ -835,17 +873,17 @@ fun WalletQuickActionsDialog(
                         .fillMaxWidth()
                         .clickable { onProfileClick() },
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFF8F9FB),
-                    border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(painter = painterResource(id = R.drawable.ic_security), contentDescription = null, tint = Color.DarkGray)
+                        Icon(painter = painterResource(id = R.drawable.ic_security), contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Wallet Security & Profile", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text("Wallet Security & Profile", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
                             Text("Manage credentials and limits", fontSize = 12.sp, color = Color.Gray)
                         }
                     }
@@ -962,6 +1000,7 @@ fun StudentScreenPreview() {
             ),
             transactions = emptyList(),
             sheetState = SheetState.Idle,
+            depositState = DepositState.Idle,
             studentKyc = com.example.wellme.data.remote.model.StudentKyc(
                 id = "student_123",
                 studentIdNumber = "123456",
@@ -973,6 +1012,7 @@ fun StudentScreenPreview() {
             onResetScanner = {},
             onConfirmPayment = {},
             onDeposit = { _, _ -> },
+            onClearDepositState = {},
             onRefresh = {}
         )
     }
