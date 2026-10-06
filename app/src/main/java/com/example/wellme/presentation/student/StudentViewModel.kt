@@ -31,12 +31,21 @@ sealed interface SheetState {
     data class Error(val message: String) : SheetState
 }
 
-sealed interface DepositState {
-    object Idle : DepositState
-    object Processing : DepositState
-    data class Success(val message: String) : DepositState
-    data class Error(val message: String) : DepositState
+sealed interface CustDepositState {
+    object Idle : CustDepositState
+    object Processing : CustDepositState
+    data class Success(val message: String) : CustDepositState
+    data class Error(val message: String) : CustDepositState
 }
+
+data class MerchantFundingRequest(
+    val requestId: String,
+    val merchantName: String,
+    val amountRequestedKsh: Double,
+    val yieldPercentage: Int,
+    val mpesaTillNumber: String,
+    val timestamp: Long
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -68,8 +77,30 @@ class StudentViewModel @Inject constructor(
     private val _sheetState = MutableStateFlow<SheetState>(SheetState.Idle)
     val sheetState: StateFlow<SheetState> = _sheetState.asStateFlow()
 
-    private val _depositState = MutableStateFlow<DepositState>(DepositState.Idle)
-    val depositState: StateFlow<DepositState> = _depositState.asStateFlow()
+    private val _depositState = MutableStateFlow<CustDepositState>(CustDepositState.Idle)
+    val depositState: StateFlow<CustDepositState> = _depositState.asStateFlow()
+
+    private val _merchantFundingRequests = MutableStateFlow<List<MerchantFundingRequest>>(
+        listOf(
+            MerchantFundingRequest(
+                requestId = "req_1",
+                merchantName = "Campus Cafe & Bakery",
+                amountRequestedKsh = 25000.0,
+                yieldPercentage = 15,
+                mpesaTillNumber = "522123",
+                timestamp = System.currentTimeMillis() - 3600000L
+            ),
+            MerchantFundingRequest(
+                requestId = "req_2",
+                merchantName = "Kibera Fresh Groceries",
+                amountRequestedKsh = 50000.0,
+                yieldPercentage = 20,
+                mpesaTillNumber = "889944",
+                timestamp = System.currentTimeMillis() - 86400000L
+            )
+        )
+    )
+    val merchantFundingRequests: StateFlow<List<MerchantFundingRequest>> = _merchantFundingRequests.asStateFlow()
 
     private val _studentKyc = MutableStateFlow<com.example.wellme.data.remote.model.StudentKyc?>(null)
     val studentKyc: StateFlow<com.example.wellme.data.remote.model.StudentKyc?> = _studentKyc.asStateFlow()
@@ -145,16 +176,16 @@ class StudentViewModel @Inject constructor(
         val amountInCents = (amountInKsh * 100).toLong()
         Log.d(TAG, "initiateDeposit: $amountInKsh KSh to $phoneNumber")
         if (amountInKsh <= 0) {
-            _depositState.value = DepositState.Error("Please enter an amount greater than 0.")
+            _depositState.value = CustDepositState.Error("Please enter an amount greater than 0.")
             return
         }
         if (phoneNumber.length < 10) {
-            _depositState.value = DepositState.Error("Please enter a valid phone number.")
+            _depositState.value = CustDepositState.Error("Please enter a valid phone number.")
             return
         }
 
         viewModelScope.launch {
-            _depositState.value = DepositState.Processing
+            _depositState.value = CustDepositState.Processing
             try {
                 val result = initiateStkPushUseCase(
                     consumerKey = com.example.wellme.BuildConfig.MPESA_CONSUMER_KEY,
@@ -164,8 +195,8 @@ class StudentViewModel @Inject constructor(
                     amount = amountInKsh.toInt().toString(),
                     phoneNumber = phoneNumber,
                     callbackUrl = com.example.wellme.BuildConfig.MPESA_CALLBACK_URL,
-                    accountReference = "WellMe Deposit",
-                    transactionDesc = "Student Wallet Deposit"
+                    accountReference = "WellMe Donation",
+                    transactionDesc = "Community Merchant Donation"
                 )
 
                 result.onSuccess { response ->
@@ -183,23 +214,27 @@ class StudentViewModel @Inject constructor(
                         Log.e(TAG, "Failed to log pending payment", e)
                     }
 
-                    _depositState.value = DepositState.Success(
-                        "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone to complete your deposit."
+                    _depositState.value = CustDepositState.Success(
+                        "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone to complete your donation."
                     )
                     refreshWallet()
                 }.onFailure {
                     Log.e(TAG, "Failed to initiate M-Pesa STK Push", it)
-                    _depositState.value = DepositState.Error(ErrorMapper.getUserFriendlyMessage(it))
+                    _depositState.value = CustDepositState.Error(ErrorMapper.getUserFriendlyMessage(it))
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "Unexpected error in initiateDeposit", e)
-                _depositState.value = DepositState.Error(ErrorMapper.getUserFriendlyMessage(e))
+                _depositState.value = CustDepositState.Error(ErrorMapper.getUserFriendlyMessage(e))
             }
         }
     }
 
+    fun donateToMerchant(merchantName: String, tillNumber: String, amountInKsh: Double, phoneNumber: String) {
+        initiateDeposit(amountInKsh, phoneNumber)
+    }
+
     fun clearDepositState() {
-        _depositState.value = DepositState.Idle
+        _depositState.value = CustDepositState.Idle
     }
 
     fun resetScanner() {

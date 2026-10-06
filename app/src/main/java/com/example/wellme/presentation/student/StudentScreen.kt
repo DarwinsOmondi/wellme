@@ -79,7 +79,7 @@ fun StudentContent(
     wallet: StudentWallet?,
     transactions: List<Transaction>,
     sheetState: SheetState,
-    depositState: DepositState,
+    depositState: CustDepositState,
     studentKyc: com.example.wellme.data.remote.model.StudentKyc?,
     onScan: (String, Long) -> Unit,
     onResetScanner: () -> Unit,
@@ -1057,7 +1057,7 @@ fun StudentScreenPreview() {
             ),
             transactions = emptyList(),
             sheetState = SheetState.Idle,
-            depositState = DepositState.Idle,
+            depositState = CustDepositState.Idle,
             studentKyc = com.example.wellme.data.remote.model.StudentKyc(
                 id = "student_123",
                 studentIdNumber = "123456",
