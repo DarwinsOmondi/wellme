@@ -38,27 +38,29 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
             emit(emptyList())
         }
 
-        // Real-time updates
-        Log.d(TAG, "Subscribing to real-time updates for merchant: $merchantId")
-        val channel = realtime.channel("inventory_$merchantId")
-        val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-            table = "items"
-        }.transform { _ ->
-            // Re-fetch everything on any change for simplicity, 
-            // or we could surgically update the local list.
-            try {
-                val currentItems = postgrest["items"]
-                    .select { filter { eq("merchant_id", merchantId) } }
-                    .decodeList<MerchantItemDto>()
-                    .map { it.toDomain() }
-                emit(currentItems)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error re-fetching inventory on update", e)
+        // Real-time updates with robust exception catching so it never crashes inventory flow
+        try {
+            Log.d(TAG, "Subscribing to real-time updates for merchant: $merchantId")
+            val channel = realtime.channel("inventory_$merchantId")
+            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+                table = "items"
+            }.transform { _ ->
+                try {
+                    val currentItems = postgrest["items"]
+                        .select { filter { eq("merchant_id", merchantId) } }
+                        .decodeList<MerchantItemDto>()
+                        .map { it.toDomain() }
+                    emit(currentItems)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error re-fetching inventory on update", e)
+                }
             }
-        }
 
-        channel.subscribe()
-        emitAll(changeFlow)
+            channel.subscribe()
+            emitAll(changeFlow)
+        } catch (e: Exception) {
+            Log.w(TAG, "Realtime updates unavailable or failed to subscribe for merchant $merchantId", e)
+        }
     }.flowOn(Dispatchers.IO)
 
     override suspend fun upsertItem(item: MerchantItem): Result<Unit> = try {
