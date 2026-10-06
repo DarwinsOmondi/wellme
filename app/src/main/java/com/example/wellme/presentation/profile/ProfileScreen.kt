@@ -31,6 +31,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import androidx.compose.ui.res.painterResource
+import com.example.wellme.R
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
@@ -220,6 +222,58 @@ fun ProfileScreenContent(
                     is ProfileUiState.Success -> {
                         val profile = state.profile
                         
+                        // Large Interactive Profile Picture Avatar
+                        Box(
+                            modifier = Modifier
+                                .size(110.dp)
+                                .clickable(onClick = onAvatarClick),
+                            contentAlignment = Alignment.BottomEnd
+                        ) {
+                            Surface(
+                                modifier = Modifier.fillMaxSize(),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                border = androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
+                            ) {
+                                if (!profile.avatarUrl.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = profile.avatarUrl,
+                                        contentDescription = "Profile Picture",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop,
+                                        placeholder = painterResource(id = R.drawable.ic_account_circle),
+                                        error = painterResource(id = R.drawable.ic_account_circle)
+                                    )
+                                } else {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.ic_account_circle),
+                                            contentDescription = "Profile Picture",
+                                            modifier = Modifier.size(60.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            Surface(
+                                modifier = Modifier.size(32.dp),
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.CameraAlt,
+                                        contentDescription = "Change Picture",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
                         Text(
                             text = profile.fullName,
                             fontSize = 32.sp,

@@ -337,12 +337,14 @@ fun InventoryItemCard(item: MerchantItem, onEdit: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = item.imageUrl ?: R.drawable.ic_restaurant,
+                model = item.imageUrl?.takeIf { it.isNotBlank() } ?: R.drawable.ic_restaurant,
                 contentDescription = item.name,
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.ic_restaurant),
+                error = painterResource(id = R.drawable.ic_restaurant)
             )
             
             Spacer(modifier = Modifier.width(16.dp))

@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import com.example.wellme.R
 import com.example.wellme.domain.model.StudentWallet
 import com.example.wellme.domain.model.Transaction
@@ -125,6 +127,7 @@ fun StudentContent(
             ) {
                 StudentHeader(
                     initials = initials,
+                    avatarUrl = studentKyc?.avatarUrl,
                     onProfileClick = onProfileClick,
                     onNotificationClick = onNotificationClick
                 )
@@ -276,6 +279,7 @@ fun StudentContent(
 fun StudentHeader(
     modifier: Modifier = Modifier,
     initials: String = "JD",
+    avatarUrl: String? = null,
     onProfileClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {}
 ) {
@@ -290,20 +294,37 @@ fun StudentHeader(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(PrimaryBlue, PrimaryBlueDark)
-                    )
-                )
                 .clickable(onClick = onProfileClick),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = initials,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            if (!avatarUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    placeholder = painterResource(id = R.drawable.ic_account_circle),
+                    error = painterResource(id = R.drawable.ic_account_circle)
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(PrimaryBlue, PrimaryBlueDark)
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initials,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
         }
 
         Text(
