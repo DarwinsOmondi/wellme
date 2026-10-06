@@ -442,7 +442,6 @@ fun BalanceCard(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_more_horiz),
                             contentDescription = "More Options",
-                            tint = Color.White,
                             modifier = Modifier.size(24.dp)
                         )
                     }
