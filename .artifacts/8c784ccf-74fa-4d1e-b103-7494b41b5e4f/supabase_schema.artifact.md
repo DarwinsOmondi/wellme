@@ -1,9 +1,9 @@
 # Supabase SQL Schema for WellMe Merchant B2C Loans & Till Tracking
 
-Run the following SQL script in your **Supabase SQL Editor** to create the tables required for tracking till balances, merchant loan requests, and B2C disbursements via Safaricom Daraja Sandbox API.
+Run the following SQL script in your **Supabase SQL Editor** to create the tables, triggers, and stored procedures required for tracking till balances, merchant loan requests, and B2C disbursements via Safaricom Daraja Sandbox API.
 
 ```sql
--- 1. Create central community till / pool table to track incoming student deposits and balance
+-- 1. Create central community till / pool table to track total ecosystem liquidity
 CREATE TABLE IF NOT EXISTS public.community_till_balance (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     till_number TEXT NOT NULL UNIQUE,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.community_till_balance (
 
 -- Insert default sandbox till record
 INSERT INTO public.community_till_balance (till_number, balance_in_cents)
-VALUES ('174379', 100000000) -- 1,000,000 KSh initial pool liquidity for sandbox testing
+VALUES ('174379', 0)
 ON CONFLICT (till_number) DO NOTHING;
 
 -- 2. Create disbursed_merchant_loans table to track all merchant capital requests and B2C disbursements
@@ -48,7 +48,39 @@ CREATE POLICY "Allow all access on disbursed_merchant_loans"
     USING (true)
     WITH CHECK (true);
 
--- 3. Stored Procedure for B2C Loan Disbursement with Till Liquidity Check
+-- 3. Trigger Function to automatically sync community till balance to the total sum of ALL student wallets
+CREATE OR REPLACE FUNCTION public.sync_community_till_from_wallets()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_total_balance BIGINT;
+BEGIN
+    -- Calculate sum of all student wallet balances in cents
+    SELECT COALESCE(SUM(balance_in_cents), 0) INTO v_total_balance
+    FROM public.student_wallets;
+
+    -- Update community_till_balance for till '174379'
+    INSERT INTO public.community_till_balance (till_number, balance_in_cents, updated_at)
+    VALUES ('174379', v_total_balance, NOW())
+    ON CONFLICT (till_number)
+    DO UPDATE SET
+        balance_in_cents = v_total_balance,
+        updated_at = NOW();
+
+    RETURN NEW;
+END;
+$$;
+
+-- Drop trigger if it exists and recreate on student_wallets table
+DROP TRIGGER IF EXISTS trg_sync_till_on_wallet_change ON public.student_wallets;
+
+CREATE TRIGGER trg_sync_till_on_wallet_change
+    AFTER INSERT OR UPDATE ON public.student_wallets
+    FOR EACH STATEMENT
+    EXECUTE FUNCTION public.sync_community_till_from_wallets();
+
+-- 4. Stored Procedure for B2C Loan Disbursement with Till Liquidity Check
 CREATE OR REPLACE FUNCTION public.request_till_b2c_loan(
     p_merchant_id UUID,
     p_business_name TEXT,
@@ -63,27 +95,16 @@ DECLARE
     v_till_balance BIGINT;
     v_loan_id UUID;
 BEGIN
-    -- Check till liquidity balance
-    SELECT balance_in_cents INTO v_till_balance
-    FROM public.community_till_balance
-    WHERE till_number = p_till_number;
-
-    IF v_till_balance IS NULL THEN
-        RETURN jsonb_build_object('success', false, 'message', 'Till number not found in community pool.');
-    END IF;
+    -- Ensure till balance is synced with total student wallets first
+    SELECT COALESCE(SUM(balance_in_cents), 0) INTO v_till_balance
+    FROM public.student_wallets;
 
     IF v_till_balance < p_amount_requested_in_cents THEN
         RETURN jsonb_build_object(
             'success', false,
-            'message', format('Insufficient till liquidity. Available: KSh %s, Requested: KSh %s', v_till_balance / 100, p_amount_requested_in_cents / 100)
+            'message', format('Insufficient till liquidity. Total Student Deposits: KSh %s, Requested: KSh %s', v_till_balance / 100, p_amount_requested_in_cents / 100)
         );
     END IF;
-
-    -- Deduct from till liquidity balance
-    UPDATE public.community_till_balance
-    SET balance_in_cents = balance_in_cents - p_amount_requested_in_cents,
-        updated_at = NOW()
-    WHERE till_number = p_till_number;
 
     -- Insert loan request record
     INSERT INTO public.disbursed_merchant_loans (
