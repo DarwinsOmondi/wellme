@@ -31,6 +31,13 @@ sealed interface SheetState {
     data class Error(val message: String) : SheetState
 }
 
+sealed interface CustDepositState {
+    object Idle : CustDepositState
+    object Processing : CustDepositState
+    data class Success(val message: String) : CustDepositState
+    data class Error(val message: String) : CustDepositState
+}
+
 data class MerchantFundingRequest(
     val requestId: String,
     val merchantName: String,
@@ -69,6 +76,9 @@ class StudentViewModel @Inject constructor(
 
     private val _sheetState = MutableStateFlow<SheetState>(SheetState.Idle)
     val sheetState: StateFlow<SheetState> = _sheetState.asStateFlow()
+
+    private val _depositState = MutableStateFlow<CustDepositState>(CustDepositState.Idle)
+    val depositState: StateFlow<CustDepositState> = _depositState.asStateFlow()
 
     private val _merchantFundingRequests = MutableStateFlow<List<MerchantFundingRequest>>(
         listOf(
@@ -166,16 +176,16 @@ class StudentViewModel @Inject constructor(
         val amountInCents = (amountInKsh * 100).toLong()
         Log.d(TAG, "initiateDeposit: $amountInKsh KSh to $phoneNumber")
         if (amountInKsh <= 0) {
-            _sheetState.value = SheetState.Error("Please enter an amount greater than 0.")
+            _depositState.value = CustDepositState.Error("Please enter an amount greater than 0.")
             return
         }
         if (phoneNumber.length < 10) {
-            _sheetState.value = SheetState.Error("Please enter a valid phone number.")
+            _depositState.value = CustDepositState.Error("Please enter a valid phone number.")
             return
         }
 
         viewModelScope.launch {
-            _sheetState.value = SheetState.Processing
+            _depositState.value = CustDepositState.Processing
             try {
                 val result = initiateStkPushUseCase(
                     consumerKey = com.example.wellme.BuildConfig.MPESA_CONSUMER_KEY,
@@ -185,8 +195,8 @@ class StudentViewModel @Inject constructor(
                     amount = amountInKsh.toInt().toString(),
                     phoneNumber = phoneNumber,
                     callbackUrl = com.example.wellme.BuildConfig.MPESA_CALLBACK_URL,
-                    accountReference = "WellMe Deposit",
-                    transactionDesc = "Student Wallet Deposit"
+                    accountReference = "WellMe Donation",
+                    transactionDesc = "Community Merchant Donation"
                 )
 
                 result.onSuccess { response ->
@@ -204,32 +214,27 @@ class StudentViewModel @Inject constructor(
                         Log.e(TAG, "Failed to log pending payment", e)
                     }
 
-                    _sheetState.value = SheetState.Success(
-                        Transaction(
-                            transactionId = response.checkoutRequestId,
-                            amountInCents = amountInCents,
-                            originalAmountInCents = amountInCents,
-                            discountAppliedInCents = 0L,
-                            timestamp = System.currentTimeMillis(),
-                            type = TransactionType.STIPEND,
-                            merchantId = "mpesa",
-                            studentId = studentId
-                        )
+                    _depositState.value = CustDepositState.Success(
+                        "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone to complete your donation."
                     )
                     refreshWallet()
                 }.onFailure {
                     Log.e(TAG, "Failed to initiate M-Pesa STK Push", it)
-                    _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(it))
+                    _depositState.value = CustDepositState.Error(ErrorMapper.getUserFriendlyMessage(it))
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "Unexpected error in initiateDeposit", e)
-                _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(e))
+                _depositState.value = CustDepositState.Error(ErrorMapper.getUserFriendlyMessage(e))
             }
         }
     }
 
     fun donateToMerchant(merchantName: String, tillNumber: String, amountInKsh: Double, phoneNumber: String) {
         initiateDeposit(amountInKsh, phoneNumber)
+    }
+
+    fun clearDepositState() {
+        _depositState.value = CustDepositState.Idle
     }
 
     fun resetScanner() {

@@ -37,6 +37,7 @@ fun RequestCapitalTab(
     onSelectedYieldChange: (Double) -> Unit,
     loanState: LoanLifecycleState,
     onSubmit: () -> Unit,
+    onViewLoansHistory: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val yields = listOf(0.10, 0.15, 0.20, 0.25, 0.30)
@@ -220,6 +221,24 @@ fun RequestCapitalTab(
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = onViewLoansHistory,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(26.dp),
+                    border = BorderStroke(1.5.dp, PrimaryBlue)
+                ) {
+                    Text(
+                        text = "View Capital History & Total Loans",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryBlue
+                    )
+                }
             }
         }
         
@@ -281,7 +300,8 @@ fun RequestCapitalTabPreview() {
             selectedYield = 0.20,
             onSelectedYieldChange = {},
             loanState = LoanLifecycleState.Idle,
-            onSubmit = {}
+            onSubmit = {},
+            onViewLoansHistory = {}
         )
     }
 }

@@ -3,6 +3,8 @@ package com.example.wellme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -196,7 +198,24 @@ fun MainNavigation() {
                     MerchantScreen(
                         viewModel = viewModel,
                         onProfileClick = { backStack.add(Profile) },
-                        onNavigateToAddItem = { backStack.add(AddInventoryItem) }
+                        onNavigateToAddItem = { backStack.add(AddInventoryItem) },
+                        onNavigateToLoansHistory = { backStack.add(MerchantLoans) }
+                    )
+                }
+
+                entry<MerchantLoans> {
+                    val viewModel: MerchantViewModel = viewModel()
+                    val loans by viewModel.disbursedLoans.collectAsState()
+                    val totalAmount by viewModel.totalLoanAmountKsh.collectAsState()
+
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        viewModel.loadDisbursedLoans()
+                    }
+
+                    MerchantLoansScreen(
+                        merchantLoans = loans,
+                        totalLoanAmountKsh = totalAmount,
+                        onBack = { backStack.removeLastOrNull() }
                     )
                 }
 

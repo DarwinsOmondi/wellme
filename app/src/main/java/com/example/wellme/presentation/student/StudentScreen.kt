@@ -51,17 +51,20 @@ fun StudentScreen(
     val wallet by viewModel.wallet.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
     val sheetState by viewModel.sheetState.collectAsState()
+    val depositState by viewModel.depositState.collectAsState()
     val studentKyc by viewModel.studentKyc.collectAsState()
 
     StudentContent(
         wallet = wallet,
         transactions = transactions,
         sheetState = sheetState,
+        depositState = depositState,
         studentKyc = studentKyc,
         onScan = { merchantId, amount -> viewModel.scanMerchant(merchantId, amount) },
         onResetScanner = { viewModel.resetScanner() },
         onConfirmPayment = { viewModel.confirmPayment() },
         onDeposit = { amount, phone -> viewModel.initiateDeposit(amount, phone) },
+        onClearDepositState = { viewModel.clearDepositState() },
         onRefresh = { viewModel.refreshWallet() },
         onProfileClick = onProfileClick,
         onDiscoverClick = onDiscoverClick,
@@ -76,11 +79,13 @@ fun StudentContent(
     wallet: StudentWallet?,
     transactions: List<Transaction>,
     sheetState: SheetState,
+    depositState: CustDepositState,
     studentKyc: com.example.wellme.data.remote.model.StudentKyc?,
     onScan: (String, Long) -> Unit,
     onResetScanner: () -> Unit,
     onConfirmPayment: () -> Unit,
     onDeposit: (Double, String) -> Unit,
+    onClearDepositState: () -> Unit,
     onRefresh: () -> Unit,
     onProfileClick: () -> Unit = {},
     onDiscoverClick: () -> Unit = {},
@@ -1042,7 +1047,6 @@ fun DiscoverVendorsBanner(onClick: () -> Unit) {
 }
 
 @Preview(showBackground = true)
-@Preview(showBackground = true)
 @Composable
 fun StudentScreenPreview() {
     WellMeTheme {
@@ -1053,6 +1057,7 @@ fun StudentScreenPreview() {
             ),
             transactions = emptyList(),
             sheetState = SheetState.Idle,
+            depositState = CustDepositState.Idle,
             studentKyc = com.example.wellme.data.remote.model.StudentKyc(
                 id = "student_123",
                 studentIdNumber = "123456",
@@ -1064,6 +1069,7 @@ fun StudentScreenPreview() {
             onResetScanner = {},
             onConfirmPayment = {},
             onDeposit = { _, _ -> },
+            onClearDepositState = {},
             onRefresh = {}
         )
     }

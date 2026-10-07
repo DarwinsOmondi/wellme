@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,8 +17,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.wellme.R
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.model.Transaction
-import com.example.wellme.presentation.merchant.MerchantDashboard
-import com.example.wellme.presentation.merchant.RequestCapitalTab
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.PrimaryBlueLight
 
@@ -28,7 +25,8 @@ fun MerchantScreen(
     viewModel: MerchantViewModel,
     inventoryViewModel: MerchantInventoryViewModel = hiltViewModel(),
     onProfileClick: () -> Unit = {},
-    onNavigateToAddItem: () -> Unit = {}
+    onNavigateToAddItem: () -> Unit = {},
+    onNavigateToLoansHistory: () -> Unit = {}
 ) {
     val merchant by viewModel.merchant.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
@@ -102,6 +100,7 @@ fun MerchantScreen(
                         onSelectedYieldChange = viewModel::onSelectedYieldChange,
                         loanState = viewModel.loanState,
                         onSubmit = { viewModel.submitCapitalRequest() },
+                        onViewLoansHistory = onNavigateToLoansHistory,
                         modifier = Modifier.fillMaxSize()
                     )
                 }

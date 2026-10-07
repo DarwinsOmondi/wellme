@@ -27,8 +27,9 @@ import kotlinx.serialization.Serializable
 @Serializable data object NotificationPreferences : NavKey
 @Serializable data object HelpSupport : NavKey
 
-// Merchant Inventory
+// Merchant Inventory & Loans
 @Serializable data object AddInventoryItem : NavKey
+@Serializable data object MerchantLoans : NavKey
 
 // Student Discover & Notifications
 @Serializable data object StudentDiscover : NavKey

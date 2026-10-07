@@ -62,7 +62,6 @@ class LoanRepositoryImpl @Inject constructor(
                 .select {
                     filter {
                         eq("merchant_id", merchantId)
-                        eq("status", "DISBURSED")
                     }
                 }
                 .decodeList<MerchantLoanDto>()

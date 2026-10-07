@@ -6,11 +6,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.wellme.domain.model.LoanLifecycleState
+import com.example.wellme.domain.model.MerchantLoanDto
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.model.Transaction
 import com.example.wellme.domain.repository.AuthRepository
+import com.example.wellme.domain.repository.LoanRepository
 import com.example.wellme.domain.repository.MerchantRepository
-import com.example.wellme.domain.model.LoanLifecycleState
 import com.example.wellme.domain.usecase.GetMerchantPoolProgressUseCase
 import com.example.wellme.domain.usecase.ProcessPaymentUseCase
 import com.example.wellme.domain.usecase.RequestLoanUseCase
@@ -23,6 +25,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MerchantViewModel @Inject constructor(
     private val merchantRepository: MerchantRepository,
+    private val loanRepository: LoanRepository,
     private val authRepository: AuthRepository,
     private val getMerchantPoolProgressUseCase: GetMerchantPoolProgressUseCase,
     private val requestLoanUseCase: RequestLoanUseCase,
@@ -44,6 +47,26 @@ class MerchantViewModel @Inject constructor(
     var selectedYield by mutableDoubleStateOf(0.15)
     var loanState by mutableStateOf<LoanLifecycleState>(LoanLifecycleState.Idle)
         private set
+
+    private val _disbursedLoans = MutableStateFlow<List<MerchantLoanDto>>(emptyList())
+    val disbursedLoans: StateFlow<List<MerchantLoanDto>> = _disbursedLoans.asStateFlow()
+
+    val totalLoanAmountKsh: StateFlow<Double> = _disbursedLoans.map { loans ->
+        loans.sumOf { it.amountRequestedInCents / 100.0 }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    init {
+        loadDisbursedLoans()
+    }
+
+    fun loadDisbursedLoans() {
+        if (merchantId.isBlank()) return
+        viewModelScope.launch {
+            loanRepository.getDisbursedLoans(merchantId).onSuccess { loans ->
+                _disbursedLoans.value = loans
+            }
+        }
+    }
 
     private val _uiEvent = MutableSharedFlow<UiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
@@ -72,6 +95,7 @@ class MerchantViewModel @Inject constructor(
                         _uiEvent.emit(UiEvent.ShowSnackbar(state.message))
                     } else if (state is LoanLifecycleState.DisbursedSuccess) {
                         _uiEvent.emit(UiEvent.ShowSnackbar("Funding request processed successfully!"))
+                        loadDisbursedLoans()
                     }
                 }
             } catch (e: Throwable) {
