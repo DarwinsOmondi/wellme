@@ -2,6 +2,7 @@ package com.example.wellme.presentation.merchant
 
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.repository.AuthRepository
+import com.example.wellme.domain.repository.LoanRepository
 import com.example.wellme.domain.repository.MerchantRepository
 import com.example.wellme.domain.usecase.GetMerchantPoolProgressUseCase
 import com.example.wellme.domain.usecase.ProcessPaymentUseCase
@@ -9,6 +10,7 @@ import com.example.wellme.domain.usecase.RequestLoanUseCase
 import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -29,6 +31,7 @@ class MerchantViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var viewModel: MerchantViewModel
     private val merchantRepository: MerchantRepository = mock()
+    private val loanRepository: LoanRepository = mock()
     private val authRepository: AuthRepository = mock()
     private val getMerchantPoolProgressUseCase: GetMerchantPoolProgressUseCase = mock()
     private val requestLoanUseCase: RequestLoanUseCase = mock()
@@ -51,6 +54,7 @@ class MerchantViewModelTest {
         
         viewModel = MerchantViewModel(
             merchantRepository = merchantRepository,
+            loanRepository = loanRepository,
             authRepository = authRepository,
             getMerchantPoolProgressUseCase = getMerchantPoolProgressUseCase,
             requestLoanUseCase = requestLoanUseCase,
@@ -65,6 +69,7 @@ class MerchantViewModelTest {
 
     @Test
     fun `merchant state is initialized from repository`() = runTest {
+        viewModel.merchant.first()
         assertEquals(merchantId, viewModel.merchantId)
         // poolTargetInCents is 100000L, so amountInput should be "1000"
         assertEquals("1000", viewModel.amountInput)
@@ -87,8 +92,5 @@ class MerchantViewModelTest {
     fun `submitCapitalRequest with invalid amount emits ShowSnackbar`() = runTest {
         viewModel.onAmountInputChange("0")
         viewModel.submitCapitalRequest()
-        
-        // In a real test we'd observe the uiEvent flow.
-        // For now, this just verifies the method runs without crashing.
     }
 }
