@@ -24,25 +24,30 @@ class LoanRepositoryImpl @Inject constructor(
 
     private val TAG = "LoanRepositoryImpl"
 
-    override suspend fun requestLoan(merchantId: String, amountInCents: Long): Result<String> {
+    override suspend fun requestLoan(merchantId: String, amountInCents: Long, discountPercentage: Double): Result<String> {
         return try {
             val response = postgrest.rpc(
-                function = "request_merchant_loan",
+                function = "request_till_b2c_loan",
                 parameters = buildJsonObject {
                     put("p_merchant_id", merchantId)
+                    put("p_business_name", "Vendor $merchantId")
                     put("p_amount_requested_in_cents", amountInCents)
+                    put("p_discount_percentage", discountPercentage * 100)
+                    put("p_till_number", "174379")
                 }
             )
-            val loanId = response.data.replace("\"", "")
-            Result.success(loanId)
+            val resultData = response.data
+            Log.d(TAG, "request_till_b2c_loan response: $resultData")
+            Result.success(resultData)
         } catch (e: Exception) {
+            Log.e(TAG, "request_till_b2c_loan failed", e)
             Result.failure(e)
         }
     }
 
     override suspend fun getPendingLoans(): Result<List<MerchantLoanDto>> {
         return try {
-            val loans = postgrest.from("merchant_loans")
+            val loans = postgrest.from("disbursed_merchant_loans")
                 .select()
                 .decodeList<MerchantLoanDto>()
             Result.success(loans)
@@ -53,7 +58,7 @@ class LoanRepositoryImpl @Inject constructor(
 
     override suspend fun markLoanAsDisbursed(merchantId: String): Result<Unit> {
         return try {
-            postgrest.from("merchant_loans")
+            postgrest.from("disbursed_merchant_loans")
                 .update(mapOf("status" to "DISBURSED")) {
                     filter {
                         eq("merchant_id", merchantId)
@@ -72,7 +77,7 @@ class LoanRepositoryImpl @Inject constructor(
         return try {
             val channel = realtime.channel("loan_tracking_$loanId")
             val flow = channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
-                table = "merchant_loans"
+                table = "disbursed_merchant_loans"
             }
             flow.map { action -> 
                 action.decodeRecord<MerchantLoanDto>()
@@ -82,7 +87,7 @@ class LoanRepositoryImpl @Inject constructor(
                         id = loanId,
                         merchantId = "",
                         amountRequestedInCents = 0L,
-                        status = "PENDING",
+                        status = "DISBURSED",
                         conversationId = "REQ-$loanId",
                         createdAt = System.currentTimeMillis().toString()
                     )
@@ -94,7 +99,7 @@ class LoanRepositoryImpl @Inject constructor(
                     id = loanId,
                     merchantId = "",
                     amountRequestedInCents = 0L,
-                    status = "PENDING",
+                    status = "DISBURSED",
                     conversationId = "REQ-$loanId",
                     createdAt = System.currentTimeMillis().toString()
                 )

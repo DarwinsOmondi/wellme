@@ -12,18 +12,18 @@ import javax.inject.Inject
 class RequestLoanUseCase @Inject constructor(
     private val loanRepository: LoanRepository
 ) {
-    suspend fun execute(merchantId: String, amountInKsh: Double): Flow<LoanLifecycleState> {
+    suspend fun execute(merchantId: String, amountInKsh: Double, yieldPercentage: Double): Flow<LoanLifecycleState> {
         val amountInCents = (amountInKsh * 100).toLong()
         
-        return loanRepository.requestLoan(merchantId, amountInCents)
+        return loanRepository.requestLoan(merchantId, amountInCents, yieldPercentage)
             .fold(
-                onSuccess = { loanId ->
-                    loanRepository.observeLoanLifecycle(loanId)
+                onSuccess = { resultData ->
+                    loanRepository.observeLoanLifecycle(resultData)
                         .map { dto ->
                             mapDtoToState(dto)
                         }
                         .onStart { 
-                            emit(LoanLifecycleState.RequestAccepted(loanId, null)) 
+                            emit(LoanLifecycleState.RequestAccepted(resultData, null)) 
                         }
                 },
                 onFailure = { error ->
@@ -40,7 +40,7 @@ class RequestLoanUseCase @Inject constructor(
     private fun mapDtoToState(dto: MerchantLoanDto): LoanLifecycleState {
         return when (dto.status) {
             "PENDING" -> LoanLifecycleState.RequestAccepted(dto.id, dto.conversationId)
-            "APPROVED" -> LoanLifecycleState.RequestAccepted(dto.id, dto.conversationId) // Or a specific state if needed
+            "APPROVED" -> LoanLifecycleState.RequestAccepted(dto.id, dto.conversationId)
             "DISBURSED" -> LoanLifecycleState.DisbursedSuccess(dto.amountRequestedInCents)
             "FAILED" -> LoanLifecycleState.OperationalError("Loan disbursement failed")
             else -> LoanLifecycleState.OperationalError("Unknown status: ${dto.status}")

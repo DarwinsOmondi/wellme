@@ -66,7 +66,7 @@ class MerchantViewModel @Inject constructor(
         viewModelScope.launch {
             loanState = LoanLifecycleState.SubmittingRpc
             try {
-                requestLoanUseCase.execute(merchantId, amount).collect { state ->
+                requestLoanUseCase.execute(merchantId, amount, selectedYield).collect { state ->
                     loanState = state
                     if (state is LoanLifecycleState.OperationalError) {
                         _uiEvent.emit(UiEvent.ShowSnackbar(state.message))

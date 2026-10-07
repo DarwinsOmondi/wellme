@@ -1,6 +1,7 @@
 package com.example.wellme.presentation.merchant
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -23,13 +24,14 @@ class LoanViewModel @Inject constructor(
     val loanState: StateFlow<LoanLifecycleState> = _loanState.asStateFlow()
 
     var amountInput by mutableStateOf("")
+    var selectedYield by mutableDoubleStateOf(0.15)
 
     fun requestLoan(merchantId: String) {
         val amount = amountInput.toDoubleOrNull() ?: return
         
         viewModelScope.launch {
             _loanState.value = LoanLifecycleState.SubmittingRpc
-            requestLoanUseCase.execute(merchantId, amount).collect { state ->
+            requestLoanUseCase.execute(merchantId, amount, selectedYield).collect { state ->
                 _loanState.value = state
             }
         }
