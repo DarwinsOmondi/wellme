@@ -56,6 +56,23 @@ class LoanRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getDisbursedLoans(merchantId: String): Result<List<MerchantLoanDto>> {
+        return try {
+            val loans = postgrest.from("disbursed_merchant_loans")
+                .select {
+                    filter {
+                        eq("merchant_id", merchantId)
+                        eq("status", "DISBURSED")
+                    }
+                }
+                .decodeList<MerchantLoanDto>()
+            Result.success(loans)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch disbursed loans for merchant $merchantId", e)
+            Result.failure(e)
+        }
+    }
+
     override suspend fun markLoanAsDisbursed(merchantId: String): Result<Unit> {
         return try {
             postgrest.from("disbursed_merchant_loans")
