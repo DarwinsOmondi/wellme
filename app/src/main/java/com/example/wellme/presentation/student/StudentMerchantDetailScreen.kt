@@ -3,13 +3,14 @@ package com.example.wellme.presentation.student
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -20,10 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -32,6 +36,7 @@ import com.example.wellme.domain.model.MerchantItem
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.theme.WellMeTheme
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,8 +87,10 @@ fun StudentMerchantDetailContent(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onClearCart) {
-                        Icon(Icons.Default.DeleteSweep, contentDescription = "Clear", tint = Color.Red)
+                    if (cart.isNotEmpty()) {
+                        IconButton(onClick = onClearCart) {
+                            Icon(Icons.Default.DeleteSweep, contentDescription = "Clear", tint = Color.Red)
+                        }
                     }
                 }
             )
@@ -105,7 +112,7 @@ fun StudentMerchantDetailContent(
                 ) {
                     item {
                         Text(
-                            text = "Current Stock",
+                            text = "Current Stock & Menu",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -164,6 +171,8 @@ fun StudentMerchantDetailContent(
 
 @Composable
 fun MerchantSummaryBar(merchant: MerchantProfile) {
+    var showFundDialog by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
@@ -187,20 +196,51 @@ fun MerchantSummaryBar(merchant: MerchantProfile) {
                 }
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "WellMe Registered Vendor",
-                    style = MaterialTheme.typography.labelMedium,
+                    text = merchant.businessName,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Discounts are automatically applied to your QR code.",
+                    text = "WellMe Registered Vendor • Tap Fund to Support",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray
                 )
             }
+            Button(
+                onClick = { showFundDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(20.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+            ) {
+                Text("Fund", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
         }
+    }
+
+    if (showFundDialog) {
+        AlertDialog(
+            onDismissRequest = { showFundDialog = false },
+            title = { Text("Support ${merchant.businessName}", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("Contribute to this merchant's community pool to help them expand stock and earn community investment rewards.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showFundDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Donate via M-Pesa")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFundDialog = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            }
+        )
     }
 }
 
@@ -222,12 +262,14 @@ fun StudentInventoryItemCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = item.imageUrl ?: R.drawable.ic_restaurant,
+                model = item.imageUrl?.takeIf { it.isNotBlank() } ?: R.drawable.ic_restaurant,
                 contentDescription = null,
                 modifier = Modifier
                     .size(64.dp)
                     .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(id = R.drawable.ic_restaurant),
+                error = painterResource(id = R.drawable.ic_restaurant)
             )
             
             Spacer(modifier = Modifier.width(16.dp))
@@ -270,28 +312,23 @@ fun SwipeToLeftQr(
     total: Double,
     onSwipeComplete: () -> Unit
 ) {
-    // A more stylized right-to-left swipe hint
+    var dragAmount by remember { mutableStateOf(0f) }
+    var maxDragWidth by remember { mutableStateOf(0f) }
+    val density = LocalDensity.current
+    val thumbSize = 60.dp
+    val thumbSizePx = with(density) { thumbSize.toPx() }
+    var isTriggered by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(horizontal = 12.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 12.dp)
+            .onSizeChanged {
+                maxDragWidth = (it.width.toFloat() - thumbSizePx - with(density) { 24.dp.toPx() }).coerceAtLeast(0f)
+            },
+        contentAlignment = Alignment.CenterEnd
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(end = 64.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "<< SWIPE TO GENERATE QR",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 0.5.sp
-            )
-        }
-
         // Total Indicator
         Row(
             modifier = Modifier.align(Alignment.CenterStart).padding(start = 20.dp),
@@ -308,17 +345,48 @@ fun SwipeToLeftQr(
                 text = String.format(Locale.getDefault(), "KSh %,.2f", total),
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 22.sp,
-                color = Color(0xFF1A1C1E)
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
 
-        // Swipe Handle (Right Side)
+        // Hint text
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "<< SWIPE TO GENERATE QR",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 0.5.sp
+            )
+        }
+
+        // Draggable Handle (Right Side)
         Surface(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .size(60.dp)
-                .clip(CircleShape)
+                .offset { IntOffset((-dragAmount).roundToInt(), 0) }
+                .size(thumbSize)
+                .draggable(
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta ->
+                        val newValue = dragAmount - delta
+                        dragAmount = newValue.coerceIn(0f, maxDragWidth)
+                    },
+                    onDragStopped = {
+                        if (dragAmount >= maxDragWidth * 0.75f && !isTriggered) {
+                            isTriggered = true
+                            dragAmount = maxDragWidth
+                            onSwipeComplete()
+                        } else {
+                            dragAmount = 0f
+                        }
+                    }
+                )
                 .clickable { onSwipeComplete() },
+            shape = CircleShape,
             color = MaterialTheme.colorScheme.primary,
             shadowElevation = 4.dp
         ) {
@@ -392,54 +460,4 @@ fun PaymentQrDialog(
             }
         }
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MerchantSummaryBarPreview() {
-    WellMeTheme {
-        MerchantSummaryBar(
-            merchant = MerchantProfile(
-                merchantId = "m123",
-                businessName = "Healthy Bites",
-                discountTier = 0.15,
-                poolTargetInCents = 100000,
-                poolRaisedInCents = 50000,
-                isVerified = true
-            )
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun StudentMerchantDetailPreview() {
-    val sampleMerchant = MerchantProfile(
-        merchantId = "m123",
-        businessName = "Healthy Bites",
-        discountTier = 0.15,
-        poolTargetInCents = 100000,
-        poolRaisedInCents = 50000,
-        isVerified = true
-    )
-    
-    val sampleItems = listOf(
-        MerchantItem("1", "Fresh Salad", 450.0, 10, "Food", "Healthy mix", null, "m123"),
-        MerchantItem("2", "Fruit Bowl", 300.0, 5, "Food", "Assorted fruits", null, "m123"),
-        MerchantItem("3", "Smoothie", 250.0, 2, "Drinks", "Berry blend", null, "m123")
-    )
-
-    WellMeTheme {
-        StudentMerchantDetailContent(
-            merchant = sampleMerchant,
-            inventory = sampleItems,
-            cart = listOf(sampleItems[0]),
-            total = 450.0,
-            studentId = "s456",
-            onBack = {},
-            onClearCart = {},
-            onAddToCart = {},
-            onRemoveFromCart = {}
-        )
-    }
 }
