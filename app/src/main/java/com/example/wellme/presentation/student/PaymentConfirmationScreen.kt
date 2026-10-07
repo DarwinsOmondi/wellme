@@ -33,6 +33,7 @@ fun PaymentConfirmationScreen(
                 BottomSheetContent(
                     state = state,
                     onDismiss = onClose,
+                    onScan = onScan,
                     onConfirm = onConfirm
                 )
             }
