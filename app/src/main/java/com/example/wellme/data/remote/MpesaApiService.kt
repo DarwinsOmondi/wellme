@@ -1,6 +1,8 @@
 package com.example.wellme.data.remote
 
 import android.util.Log
+import com.example.wellme.data.remote.model.B2cRequest
+import com.example.wellme.data.remote.model.B2cResponse
 import com.example.wellme.data.remote.model.MpesaTokenResponse
 import com.example.wellme.data.remote.model.StkPushRequest
 import com.example.wellme.data.remote.model.StkPushResponse
@@ -46,6 +48,20 @@ class MpesaApiService @Inject constructor(
         val baseUrl = getBaseUrl(isSandbox)
         Log.d(TAG, "initiateStkPush calling: $baseUrl/mpesa/stkpush/v1/processrequest")
         return client.post("$baseUrl/mpesa/stkpush/v1/processrequest") {
+            header("Authorization", "Bearer $accessToken")
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+    }
+
+    suspend fun initiateB2cDisbursement(
+        accessToken: String,
+        request: B2cRequest,
+        isSandbox: Boolean = true
+    ): B2cResponse {
+        val baseUrl = getBaseUrl(isSandbox)
+        Log.d(TAG, "initiateB2cDisbursement calling: $baseUrl/mpesa/b2c/v1/paymentrequest")
+        return client.post("$baseUrl/mpesa/b2c/v1/paymentrequest") {
             header("Authorization", "Bearer $accessToken")
             contentType(ContentType.Application.Json)
             setBody(request)

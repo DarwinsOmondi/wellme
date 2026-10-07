@@ -34,6 +34,28 @@ data class StkPushResponse(
 )
 
 @Serializable
+data class B2cRequest(
+    @SerialName("InitiatorName") val initiatorName: String,
+    @SerialName("SecurityCredential") val securityCredential: String,
+    @SerialName("CommandID") val commandID: String,
+    @SerialName("Amount") val amount: String,
+    @SerialName("PartyA") val partyA: String,
+    @SerialName("PartyB") val partyB: String,
+    @SerialName("Remarks") val remarks: String,
+    @SerialName("QueueTimeOutURL") val queueTimeOutURL: String,
+    @SerialName("ResultURL") val resultURL: String,
+    @SerialName("Occasion") val occasion: String
+)
+
+@Serializable
+data class B2cResponse(
+    @SerialName("ConversationID") val conversationID: String,
+    @SerialName("OriginatorConversationID") val originatorConversationID: String,
+    @SerialName("ResponseCode") val responseCode: String,
+    @SerialName("ResponseDescription") val responseDescription: String
+)
+
+@Serializable
 data class PendingPaymentDto(
     @SerialName("checkout_request_id") val checkoutRequestId: String,
     @SerialName("student_id") val studentId: String,
