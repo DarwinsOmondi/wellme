@@ -38,6 +38,7 @@ fun RequestCapitalTab(
     loanState: LoanLifecycleState,
     onSubmit: () -> Unit,
     onViewLoansHistory: () -> Unit = {},
+    onDismissStatus: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val yields = listOf(0.10, 0.15, 0.20, 0.25, 0.30)
@@ -63,7 +64,10 @@ fun RequestCapitalTab(
 
         // Loan Request Status
         if (loanState !is LoanLifecycleState.Idle) {
-            StatusCard(loanState = loanState)
+            StatusCard(
+                loanState = loanState,
+                onDismiss = onDismissStatus
+            )
         }
 
         // Loan Request Card
@@ -247,7 +251,10 @@ fun RequestCapitalTab(
 }
 
 @Composable
-fun StatusCard(loanState: LoanLifecycleState) {
+fun StatusCard(
+    loanState: LoanLifecycleState,
+    onDismiss: () -> Unit = {}
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -276,13 +283,29 @@ fun StatusCard(loanState: LoanLifecycleState) {
                     Text("Processing disbursement...", fontSize = 13.sp)
                 }
                 is LoanLifecycleState.DisbursedSuccess -> {
-                    Icon(imageVector = Icons.Default.Verified, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
+                    Icon(imageVector = Icons.Default.Verified, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(36.dp))
                     Text("Disbursement Successful!", fontWeight = FontWeight.ExtraBold, color = PrimaryBlueDark)
                     Text("KSh ${loanState.amountInCents / 100} deposited to your M-Pesa.", textAlign = TextAlign.Center)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    ) {
+                        Text("Done", fontWeight = FontWeight.Bold)
+                    }
                 }
                 is LoanLifecycleState.OperationalError -> {
                     Text("Network Error", fontWeight = FontWeight.Bold, color = Color(0xFFB71C1C))
                     Text(loanState.message, style = MaterialTheme.typography.bodySmall, color = Color(0xFFC62828), textAlign = TextAlign.Center)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB71C1C))
+                    ) {
+                        Text("Dismiss", fontWeight = FontWeight.Bold)
+                    }
                 }
                 else -> {}
             }
@@ -301,7 +324,8 @@ fun RequestCapitalTabPreview() {
             onSelectedYieldChange = {},
             loanState = LoanLifecycleState.Idle,
             onSubmit = {},
-            onViewLoansHistory = {}
+            onViewLoansHistory = {},
+            onDismissStatus = {}
         )
     }
 }

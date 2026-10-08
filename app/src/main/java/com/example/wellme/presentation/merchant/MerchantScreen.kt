@@ -96,6 +96,7 @@ fun MerchantScreen(
                         loanState = viewModel.loanState,
                         onSubmit = { viewModel.submitCapitalRequest() },
                         onViewLoansHistory = onNavigateToLoansHistory,
+                        onDismissStatus = viewModel::resetLoanState,
                         modifier = Modifier.fillMaxSize()
                     )
                 }

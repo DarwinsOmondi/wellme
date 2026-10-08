@@ -48,6 +48,10 @@ class MerchantViewModel @Inject constructor(
     var loanState by mutableStateOf<LoanLifecycleState>(LoanLifecycleState.Idle)
         private set
 
+    fun resetLoanState() {
+        loanState = LoanLifecycleState.Idle
+    }
+
     private val _disbursedLoans = MutableStateFlow<List<MerchantLoanDto>>(emptyList())
     val disbursedLoans: StateFlow<List<MerchantLoanDto>> = _disbursedLoans.asStateFlow()
 
