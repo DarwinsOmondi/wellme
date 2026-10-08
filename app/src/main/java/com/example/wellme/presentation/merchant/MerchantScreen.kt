@@ -32,7 +32,7 @@ fun MerchantScreen(
     val transactions by viewModel.transactions.collectAsState()
     val progress by viewModel.poolProgress.collectAsState()
     
-    var activeTab by remember { mutableStateOf(0) } // 0: Inventory, 1: Payments, 2: History, 3: Impact
+    var activeTab by remember { mutableStateOf(0) } // 0: Inventory, 1: Sales Statements, 2: Impact & Loans
 
     Scaffold(
         containerColor = Color(0xFFF8F9FB),
@@ -82,18 +82,13 @@ fun MerchantScreen(
                         onProfileClick = onProfileClick,
                         modifier = Modifier.fillMaxSize()
                     )
-                    1 -> MerchantPOSScreen(
-                        viewModel = inventoryViewModel,
-                        onProfileClick = onProfileClick,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    2 -> MerchantDashboard(
+                    1 -> MerchantDashboard(
                         merchant = merchant,
                         progress = progress,
                         transactions = transactions,
                         modifier = Modifier.fillMaxSize()
                     )
-                    3 -> RequestCapitalTab(
+                    2 -> RequestCapitalTab(
                         amountInput = viewModel.amountInput,
                         onAmountInputChange = viewModel::onAmountInputChange,
                         selectedYield = viewModel.selectedYield,
@@ -116,14 +111,13 @@ fun MerchantBottomNavigation(
 ) {
     NavigationBar(
         containerColor = Color.White,
-        tonalElevation = 0.dp, // Elevation handled by Surface wrapper
+        tonalElevation = 0.dp,
         modifier = Modifier.height(80.dp)
     ) {
         val items = listOf(
             Triple("Inventory", Icons.Default.Inventory, 0),
-            Triple("Payments", Icons.Default.QrCodeScanner, 1),
-            Triple("History", Icons.AutoMirrored.Filled.ReceiptLong, 2),
-            Triple("Impact", Icons.Default.TrendingUp, 3)
+            Triple("Statements", Icons.AutoMirrored.Filled.ReceiptLong, 1),
+            Triple("Impact & Capital", Icons.Default.TrendingUp, 2)
         )
 
         items.forEach { (label, icon, index) ->
