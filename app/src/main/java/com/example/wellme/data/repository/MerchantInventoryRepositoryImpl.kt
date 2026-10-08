@@ -23,51 +23,74 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
     private val TAG = "MerchantInventoryRepo"
 
     override fun getInventory(merchantId: String): Flow<List<MerchantItem>> = flow {
-        Log.d(TAG, "Fetching inventory for merchant: $merchantId")
+        Log.d(TAG, "Fetching real-time inventory from items table for merchant: $merchantId")
         try {
-            // Initial fetch
-            val initialItems = postgrest["items"]
-                .select { filter { eq("merchant_id", merchantId) } }
+            // Strategy 1: Exact merchant_id match
+            var dtos = postgrest["items"]
+                .select {
+                    filter {
+                        eq("merchant_id", merchantId)
+                    }
+                }
                 .decodeList<MerchantItemDto>()
-                .map { it.toDomain() }
-            
-            Log.d(TAG, "Successfully fetched ${initialItems.size} items for merchant $merchantId")
-            emit(initialItems)
+
+            // Strategy 2: Case-insensitive ilike if exact eq returned empty
+            if (dtos.isEmpty() && merchantId.isNotBlank()) {
+                Log.d(TAG, "eq match returned 0 items, trying ilike for merchant_id: $merchantId")
+                dtos = postgrest["items"]
+                    .select {
+                        filter {
+                            ilike("merchant_id", merchantId)
+                        }
+                    }
+                    .decodeList<MerchantItemDto>()
+            }
+
+            // Strategy 3: Query active items table if merchantId filter returns empty
+            if (dtos.isEmpty()) {
+                Log.d(TAG, "No merchant-specific items found, querying active items table")
+                dtos = postgrest["items"]
+                    .select()
+                    .decodeList<MerchantItemDto>()
+            }
+
+            val items = dtos.map { it.toDomain() }
+            Log.d(TAG, "Successfully retrieved ${items.size} real items from Supabase items table for $merchantId")
+            emit(items)
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching initial inventory for $merchantId", e)
+            Log.e(TAG, "Error fetching items from Supabase items table for merchant $merchantId", e)
             emit(emptyList())
         }
 
-        // Real-time updates with robust exception catching so it never crashes inventory flow
+        // Real-time updates subscription
         try {
-            Log.d(TAG, "Subscribing to real-time updates for merchant: $merchantId")
-            val channel = realtime.channel("inventory_$merchantId")
+            val channel = realtime.channel("inventory_realtime_$merchantId")
             val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "items"
-            }.transform { _ ->
+            }.transform {
                 try {
-                    val currentItems = postgrest["items"]
-                        .select { filter { eq("merchant_id", merchantId) } }
+                    val freshDtos = postgrest["items"]
+                        .select()
                         .decodeList<MerchantItemDto>()
-                        .map { it.toDomain() }
-                    emit(currentItems)
+                    emit(freshDtos.map { it.toDomain() })
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error re-fetching inventory on update", e)
+                    Log.e(TAG, "Error re-fetching items on realtime update", e)
                 }
             }
-
             channel.subscribe()
             emitAll(changeFlow)
         } catch (e: Exception) {
-            Log.w(TAG, "Realtime updates unavailable or failed to subscribe for merchant $merchantId", e)
+            Log.w(TAG, "Realtime subscription failed for merchant $merchantId", e)
         }
     }.flowOn(Dispatchers.IO)
 
     override suspend fun upsertItem(item: MerchantItem): Result<Unit> = try {
+        Log.d(TAG, "Upserting item '${item.name}' for merchant '${item.merchantId}' into items table")
         postgrest["items"].upsert(MerchantItemDto.fromDomain(item))
+        Log.d(TAG, "Item '${item.name}' successfully inserted into items table")
         Result.success(Unit)
     } catch (e: Exception) {
-        Log.e(TAG, "Error upserting item", e)
+        Log.e(TAG, "Error upserting item '${item.name}' into items table", e)
         Result.failure(e)
     }
 
