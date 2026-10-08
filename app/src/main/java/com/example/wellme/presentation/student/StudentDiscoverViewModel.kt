@@ -1,6 +1,7 @@
 package com.example.wellme.presentation.student
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wellme.domain.model.MerchantItem
@@ -28,8 +29,11 @@ class StudentDiscoverViewModel @Inject constructor(
     private val merchantRepository: MerchantRepository,
     private val inventoryRepository: MerchantInventoryRepository,
     private val authRepository: AuthRepository,
-    private val initiateStkPushUseCase: InitiateStkPushUseCase
+    private val initiateStkPushUseCase: InitiateStkPushUseCase,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+
+    private val initialMerchantId: String? = savedStateHandle["merchantId"]
 
     val studentId: String = authRepository.getCurrentUser()?.id ?: ""
 
@@ -37,7 +41,7 @@ class StudentDiscoverViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val merchants = _merchants
 
-    private val _selectedMerchantId = MutableStateFlow<String?>(null)
+    private val _selectedMerchantId = MutableStateFlow<String?>(initialMerchantId)
     
     val selectedMerchant = _selectedMerchantId.flatMapLatest { id ->
         if (id == null) flowOf(null)
