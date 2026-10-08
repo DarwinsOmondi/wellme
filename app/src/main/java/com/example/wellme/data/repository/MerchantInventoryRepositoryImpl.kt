@@ -5,10 +5,6 @@ import com.example.wellme.data.remote.model.MerchantItemDto
 import com.example.wellme.domain.model.MerchantItem
 import com.example.wellme.domain.repository.MerchantInventoryRepository
 import io.github.jan.supabase.postgrest.Postgrest
-import io.github.jan.supabase.realtime.PostgresAction
-import io.github.jan.supabase.realtime.Realtime
-import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -16,8 +12,7 @@ import javax.inject.Singleton
 
 @Singleton
 class MerchantInventoryRepositoryImpl @Inject constructor(
-    private val postgrest: Postgrest,
-    private val realtime: Realtime
+    private val postgrest: Postgrest
 ) : MerchantInventoryRepository {
 
     private val TAG = "MerchantInventoryRepo"
@@ -25,62 +20,39 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
     override fun getInventory(merchantId: String): Flow<List<MerchantItem>> = flow {
         Log.d(TAG, "Fetching real-time inventory from items table for merchant: $merchantId")
         try {
-            // Strategy 1: Exact merchant_id match
-            var dtos = postgrest["items"]
-                .select {
-                    filter {
-                        eq("merchant_id", merchantId)
-                    }
-                }
-                .decodeList<MerchantItemDto>()
-
-            // Strategy 2: Case-insensitive ilike if exact eq returned empty
-            if (dtos.isEmpty() && merchantId.isNotBlank()) {
-                Log.d(TAG, "eq match returned 0 items, trying ilike for merchant_id: $merchantId")
-                dtos = postgrest["items"]
+            // Safe query avoiding UUID operator type mismatch errors (uuid vs ilike)
+            val dtos = try {
+                postgrest["items"]
                     .select {
                         filter {
-                            ilike("merchant_id", merchantId)
+                            eq("merchant_id", merchantId)
                         }
                     }
                     .decodeList<MerchantItemDto>()
-            }
-
-            // Strategy 3: Query active items table if merchantId filter returns empty
-            if (dtos.isEmpty()) {
-                Log.d(TAG, "No merchant-specific items found, querying active items table")
-                dtos = postgrest["items"]
+            } catch (uuidEx: Exception) {
+                Log.w(TAG, "eq filter failed, falling back to fetching all items and filtering locally", uuidEx)
+                postgrest["items"]
                     .select()
                     .decodeList<MerchantItemDto>()
+                    .filter { it.merchantId.equals(merchantId, ignoreCase = true) }
             }
 
-            val items = dtos.map { it.toDomain() }
+            // Fallback: If still empty, query all items to ensure items inserted are visible
+            val finalDtos = if (dtos.isEmpty()) {
+                Log.d(TAG, "Merchant-specific query returned 0 items, querying all items table")
+                postgrest["items"]
+                    .select()
+                    .decodeList<MerchantItemDto>()
+            } else {
+                dtos
+            }
+
+            val items = finalDtos.map { it.toDomain() }
             Log.d(TAG, "Successfully retrieved ${items.size} real items from Supabase items table for $merchantId")
             emit(items)
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching items from Supabase items table for merchant $merchantId", e)
             emit(emptyList())
-        }
-
-        // Real-time updates subscription
-        try {
-            val channel = realtime.channel("inventory_realtime_$merchantId")
-            val changeFlow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
-                table = "items"
-            }.transform {
-                try {
-                    val freshDtos = postgrest["items"]
-                        .select()
-                        .decodeList<MerchantItemDto>()
-                    emit(freshDtos.map { it.toDomain() })
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error re-fetching items on realtime update", e)
-                }
-            }
-            channel.subscribe()
-            emitAll(changeFlow)
-        } catch (e: Exception) {
-            Log.w(TAG, "Realtime subscription failed for merchant $merchantId", e)
         }
     }.flowOn(Dispatchers.IO)
 
