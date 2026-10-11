@@ -42,6 +42,7 @@ class OnboardingViewModel @Inject constructor(
     var businessName by mutableStateOf("")
     var nationalIdNumber by mutableStateOf("")
     var tillNumber by mutableStateOf("")
+    var mpesaPhoneNumber by mutableStateOf("254")
 
     // Verification & Document States
     var selectedFileUri by mutableStateOf<Uri?>(null)
@@ -59,6 +60,7 @@ class OnboardingViewModel @Inject constructor(
     fun onBusinessNameChange(value: String) { businessName = value }
     fun onNationalIdNumberChange(value: String) { nationalIdNumber = value }
     fun onTillNumberChange(value: String) { tillNumber = value }
+    fun onMpesaPhoneNumberChange(value: String) { mpesaPhoneNumber = value }
 
     fun onFileSelected(uri: Uri?, name: String) {
         Log.d(TAG, "onFileSelected: $name, uri: $uri")

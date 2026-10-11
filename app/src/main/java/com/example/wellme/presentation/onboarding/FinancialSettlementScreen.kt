@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -21,10 +22,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -70,6 +70,8 @@ fun FinancialSettlementScreen(
         FinancialSettlementContent(
             tillNumber = viewModel.tillNumber,
             onTillNumberChange = viewModel::onTillNumberChange,
+            mpesaPhoneNumber = viewModel.mpesaPhoneNumber,
+            onMpesaPhoneNumberChange = viewModel::onMpesaPhoneNumberChange,
             selectedFileUri = viewModel.selectedFileUri,
             fileName = viewModel.fileName,
             onFileClick = { launcher.launch("*/*") },
@@ -77,7 +79,7 @@ fun FinancialSettlementScreen(
             onComplete = {
                 viewModel.submitMerchantKyc(context.contentResolver)
             },
-            modifier = modifier // padding handled in content
+            modifier = modifier
         )
     }
 }
@@ -87,6 +89,8 @@ fun FinancialSettlementScreen(
 fun FinancialSettlementContent(
     tillNumber: String,
     onTillNumberChange: (String) -> Unit,
+    mpesaPhoneNumber: String,
+    onMpesaPhoneNumberChange: (String) -> Unit,
     selectedFileUri: android.net.Uri?,
     fileName: String,
     onFileClick: () -> Unit,
@@ -267,6 +271,57 @@ fun FinancialSettlementContent(
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
             )
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "M-Pesa Withdrawal Phone Number",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1C1A)
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = mpesaPhoneNumber,
+                onValueChange = onMpesaPhoneNumberChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = {
+                    Text(
+                        text = "e.g. 254712345678",
+                        color = Color.Gray
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = null,
+                        tint = Color.Gray
+                    )
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    cursorColor = MaterialTheme.colorScheme.primary
+                ),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Used for receiving loan disbursements and payment withdrawals via M-Pesa B2C.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF6B7280),
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
@@ -341,7 +396,7 @@ fun FinancialSettlementContent(
             // Complete Button
             Button(
                 onClick = onComplete,
-                enabled = tillNumber.length >= 5 && selectedFileUri != null,
+                enabled = tillNumber.length >= 5 && mpesaPhoneNumber.length >= 10 && selectedFileUri != null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp),
@@ -392,6 +447,8 @@ fun FinancialSettlementScreenPreview() {
         FinancialSettlementContent(
             tillNumber = "",
             onTillNumberChange = {},
+            mpesaPhoneNumber = "",
+            onMpesaPhoneNumberChange = {},
             selectedFileUri = null,
             fileName = "",
             onFileClick = {}
