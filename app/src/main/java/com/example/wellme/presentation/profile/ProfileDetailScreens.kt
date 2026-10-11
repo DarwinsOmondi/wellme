@@ -27,14 +27,72 @@ fun PersonalDetailsScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    var isEditing by remember { mutableStateOf(false) }
+
+    var studentNameInput by remember { mutableStateOf("") }
+    var campusEmailInput by remember { mutableStateOf("") }
+    var phoneInput by remember { mutableStateOf("") }
+
+    var businessNameInput by remember { mutableStateOf("") }
+    var tillNumberInput by remember { mutableStateOf("") }
+    var mpesaPhoneInput by remember { mutableStateOf("") }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Personal Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    when (val uiState = state) {
+                        is ProfileUiState.Success -> {
+                            TextButton(
+                                onClick = {
+                                    if (isEditing) {
+                                        val profile = uiState.profile
+                                        if (profile.studentKyc != null) {
+                                            viewModel.updateStudentDetails(
+                                                profile.studentKyc.id,
+                                                studentNameInput,
+                                                campusEmailInput,
+                                                phoneInput
+                                            )
+                                        } else if (profile.merchantKyc != null) {
+                                            viewModel.updateMerchantDetails(
+                                                profile.merchantKyc.id,
+                                                businessNameInput,
+                                                tillNumberInput,
+                                                mpesaPhoneInput
+                                            )
+                                        }
+                                        isEditing = false
+                                        scope.launch { snackbarHostState.showSnackbar("Details updated successfully!") }
+                                    } else {
+                                        uiState.profile.studentKyc?.let {
+                                            studentNameInput = it.studentName
+                                            campusEmailInput = it.campusEmail
+                                            phoneInput = it.phoneNumber
+                                        }
+                                        uiState.profile.merchantKyc?.let {
+                                            businessNameInput = it.businessName
+                                            tillNumberInput = "174379"
+                                            mpesaPhoneInput = "254712345678"
+                                        }
+                                        isEditing = true
+                                    }
+                                }
+                            ) {
+                                Text(if (isEditing) "Save" else "Edit", fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                            }
+                        }
+                        else -> {}
                     }
                 }
             )
@@ -56,14 +114,62 @@ fun PersonalDetailsScreen(
                     val merchantKyc = profile.merchantKyc
 
                     if (studentKyc != null) {
-                        InfoCard(title = "Full Name", value = studentKyc.studentName)
-                        InfoCard(title = "Student ID", value = studentKyc.studentIdNumber)
-                        InfoCard(title = "Campus Email", value = studentKyc.campusEmail)
-                        InfoCard(title = "Phone Number", value = studentKyc.phoneNumber)
+                        if (isEditing) {
+                            OutlinedTextField(
+                                value = studentNameInput,
+                                onValueChange = { studentNameInput = it },
+                                label = { Text("Full Name") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            OutlinedTextField(
+                                value = campusEmailInput,
+                                onValueChange = { campusEmailInput = it },
+                                label = { Text("Campus Email") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            OutlinedTextField(
+                                value = phoneInput,
+                                onValueChange = { phoneInput = it },
+                                label = { Text("Phone Number") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                        } else {
+                            InfoCard(title = "Full Name", value = studentKyc.studentName)
+                            InfoCard(title = "Student ID", value = studentKyc.studentIdNumber)
+                            InfoCard(title = "Campus Email", value = studentKyc.campusEmail)
+                            InfoCard(title = "Phone Number", value = studentKyc.phoneNumber)
+                        }
                     } else if (merchantKyc != null) {
-                        InfoCard(title = "Business Name", value = merchantKyc.businessName)
-                        InfoCard(title = "National ID", value = merchantKyc.nationalIdNumber)
-                        InfoCard(title = "Account Status", value = "Verified Merchant")
+                        if (isEditing) {
+                            OutlinedTextField(
+                                value = businessNameInput,
+                                onValueChange = { businessNameInput = it },
+                                label = { Text("Business Name") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            OutlinedTextField(
+                                value = tillNumberInput,
+                                onValueChange = { tillNumberInput = it },
+                                label = { Text("M-Pesa Till / Paybill") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                            OutlinedTextField(
+                                value = mpesaPhoneInput,
+                                onValueChange = { mpesaPhoneInput = it },
+                                label = { Text("M-Pesa Withdrawal Phone Number") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                        } else {
+                            InfoCard(title = "Business Name", value = merchantKyc.businessName)
+                            InfoCard(title = "National ID", value = merchantKyc.nationalIdNumber)
+                            InfoCard(title = "Account Status", value = "Verified Merchant")
+                        }
                     }
                 }
                 else -> {

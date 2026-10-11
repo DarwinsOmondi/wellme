@@ -119,6 +119,28 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun updateStudentDetails(userId: String, name: String, email: String, phone: String) {
+        viewModelScope.launch {
+            _state.value = ProfileUiState.Loading
+            kycRepository.updateStudentKyc(userId, name, email, phone).onSuccess {
+                loadUserProfile()
+            }.onFailure {
+                _state.value = ProfileUiState.Error(ErrorMapper.getUserFriendlyMessage(it))
+            }
+        }
+    }
+
+    fun updateMerchantDetails(userId: String, businessName: String, tillNumber: String, mpesaPhone: String) {
+        viewModelScope.launch {
+            _state.value = ProfileUiState.Loading
+            kycRepository.updateMerchantKyc(userId, businessName, tillNumber, mpesaPhone).onSuccess {
+                loadUserProfile()
+            }.onFailure {
+                _state.value = ProfileUiState.Error(ErrorMapper.getUserFriendlyMessage(it))
+            }
+        }
+    }
+
     fun signOut() {
         viewModelScope.launch {
             authRepository.signOut().onSuccess {

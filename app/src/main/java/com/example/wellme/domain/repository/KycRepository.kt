@@ -25,4 +25,6 @@ interface KycRepository {
     suspend fun getStudentKyc(userId: String): Result<StudentKyc?>
     suspend fun getMerchantKyc(userId: String): Result<MerchantKyc?>
     suspend fun updateAvatar(imageBytes: ByteArray, extension: String): Result<String>
+    suspend fun updateStudentKyc(userId: String, name: String, email: String, phone: String): Result<Unit>
+    suspend fun updateMerchantKyc(userId: String, businessName: String, tillNumber: String, mpesaPhone: String): Result<Unit>
 }

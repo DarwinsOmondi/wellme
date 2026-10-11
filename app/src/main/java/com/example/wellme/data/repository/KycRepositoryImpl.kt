@@ -223,4 +223,39 @@ class KycRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun updateStudentKyc(userId: String, name: String, email: String, phone: String): Result<Unit> {
+        return try {
+            postgrest.from("student_kyc").update({
+                set("student_name", name)
+                set("campus_email", email)
+                set("phone_number", phone)
+            }) {
+                filter { eq("id", userId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating student KYC", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateMerchantKyc(userId: String, businessName: String, tillNumber: String, mpesaPhone: String): Result<Unit> {
+        return try {
+            postgrest.from("merchant_kyc").update({
+                set("business_name", businessName)
+            }) {
+                filter { eq("id", userId) }
+            }
+            postgrest.from("merchants").update({
+                set("business_name", businessName)
+            }) {
+                filter { eq("merchant_id", userId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating merchant KYC", e)
+            Result.failure(e)
+        }
+    }
 }
