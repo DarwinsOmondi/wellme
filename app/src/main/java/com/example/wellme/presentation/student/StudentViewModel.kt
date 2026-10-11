@@ -27,15 +27,9 @@ sealed interface SheetState {
     object Idle : SheetState
     data class Scanned(val merchant: MerchantProfile, val originalAmountInCents: Long, val discountAppliedInCents: Long, val netAmountInCents: Long) : SheetState
     object Processing : SheetState
+    data class Pending(val checkoutRequestId: String, val message: String) : SheetState
     data class Success(val transaction: Transaction) : SheetState
     data class Error(val message: String) : SheetState
-}
-
-sealed interface CustDepositState {
-    object Idle : CustDepositState
-    object Processing : CustDepositState
-    data class Success(val message: String) : CustDepositState
-    data class Error(val message: String) : CustDepositState
 }
 
 data class MerchantFundingRequest(
@@ -76,9 +70,6 @@ class StudentViewModel @Inject constructor(
 
     private val _sheetState = MutableStateFlow<SheetState>(SheetState.Idle)
     val sheetState: StateFlow<SheetState> = _sheetState.asStateFlow()
-
-    private val _depositState = MutableStateFlow<CustDepositState>(CustDepositState.Idle)
-    val depositState: StateFlow<CustDepositState> = _depositState.asStateFlow()
 
     private val _merchantFundingRequests = MutableStateFlow<List<MerchantFundingRequest>>(
         listOf(
@@ -172,20 +163,49 @@ class StudentViewModel @Inject constructor(
         }
     }
 
+    private var pendingJob: kotlinx.coroutines.Job? = null
+
+    fun observePendingCheckout(checkoutRequestId: String) {
+        pendingJob?.cancel()
+        pendingJob = viewModelScope.launch {
+            walletRepository.observePendingPayment(checkoutRequestId)
+                .collect { pending ->
+                    Log.d(TAG, "Observed pending payment status: ${pending.status}")
+                    if (pending.status.equals("SUCCESS", ignoreCase = true)) {
+                        _sheetState.value = SheetState.Success(
+                            Transaction(
+                                transactionId = pending.checkoutRequestId,
+                                amountInCents = pending.amountInCents,
+                                originalAmountInCents = pending.amountInCents,
+                                discountAppliedInCents = 0L,
+                                timestamp = System.currentTimeMillis(),
+                                type = TransactionType.STIPEND,
+                                merchantId = "mpesa",
+                                studentId = studentId
+                            )
+                        )
+                        refreshWallet()
+                    } else if (pending.status.equals("FAILED", ignoreCase = true)) {
+                        _sheetState.value = SheetState.Error("M-Pesa payment failed or was cancelled.")
+                    }
+                }
+        }
+    }
+
     fun initiateDeposit(amountInKsh: Double, phoneNumber: String) {
         val amountInCents = (amountInKsh * 100).toLong()
         Log.d(TAG, "initiateDeposit: $amountInKsh KSh to $phoneNumber")
         if (amountInKsh <= 0) {
-            _depositState.value = CustDepositState.Error("Please enter an amount greater than 0.")
+            _sheetState.value = SheetState.Error("Please enter an amount greater than 0.")
             return
         }
         if (phoneNumber.length < 10) {
-            _depositState.value = CustDepositState.Error("Please enter a valid phone number.")
+            _sheetState.value = SheetState.Error("Please enter a valid phone number.")
             return
         }
 
         viewModelScope.launch {
-            _depositState.value = CustDepositState.Processing
+            _sheetState.value = SheetState.Processing
             try {
                 val result = initiateStkPushUseCase(
                     consumerKey = com.example.wellme.BuildConfig.MPESA_CONSUMER_KEY,
@@ -195,8 +215,8 @@ class StudentViewModel @Inject constructor(
                     amount = amountInKsh.toInt().toString(),
                     phoneNumber = phoneNumber,
                     callbackUrl = com.example.wellme.BuildConfig.MPESA_CALLBACK_URL,
-                    accountReference = "WellMe Donation",
-                    transactionDesc = "Community Merchant Donation"
+                    accountReference = "WellMe Deposit",
+                    transactionDesc = "Student Wallet Deposit"
                 )
 
                 result.onSuccess { response ->
@@ -214,17 +234,19 @@ class StudentViewModel @Inject constructor(
                         Log.e(TAG, "Failed to log pending payment", e)
                     }
 
-                    _depositState.value = CustDepositState.Success(
-                        "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone to complete your donation."
+                    _sheetState.value = SheetState.Pending(
+                        response.checkoutRequestId,
+                        "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone."
                     )
+                    observePendingCheckout(response.checkoutRequestId)
                     refreshWallet()
                 }.onFailure {
                     Log.e(TAG, "Failed to initiate M-Pesa STK Push", it)
-                    _depositState.value = CustDepositState.Error(ErrorMapper.getUserFriendlyMessage(it))
+                    _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(it))
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "Unexpected error in initiateDeposit", e)
-                _depositState.value = CustDepositState.Error(ErrorMapper.getUserFriendlyMessage(e))
+                _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(e))
             }
         }
     }
@@ -233,12 +255,9 @@ class StudentViewModel @Inject constructor(
         initiateDeposit(amountInKsh, phoneNumber)
     }
 
-    fun clearDepositState() {
-        _depositState.value = CustDepositState.Idle
-    }
-
     fun resetScanner() {
         Log.d(TAG, "resetScanner")
+        pendingJob?.cancel()
         _sheetState.value = SheetState.Idle
     }
 

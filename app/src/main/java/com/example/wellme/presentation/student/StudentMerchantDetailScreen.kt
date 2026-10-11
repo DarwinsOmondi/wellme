@@ -53,7 +53,6 @@ fun StudentMerchantDetailScreen(
         cart = cart,
         total = total,
         paymentState = paymentState,
-        studentId = viewModel.studentId,
         onBack = onBack,
         onClearCart = { viewModel.clearCart() },
         onAddToCart = { viewModel.addToCart(it) },
@@ -71,7 +70,6 @@ fun StudentMerchantDetailContent(
     cart: List<MerchantItem>,
     total: Double,
     paymentState: PaymentPayState,
-    studentId: String,
     onBack: () -> Unit,
     onClearCart: () -> Unit,
     onAddToCart: (MerchantItem) -> Unit,
@@ -319,6 +317,32 @@ fun MpesaExpressPayBottomSheet(
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
+                is PaymentPayState.Pending -> {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator(color = PrimaryBlue, modifier = Modifier.size(48.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(
+                        text = "Waiting for M-Pesa PIN...",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = paymentState.message,
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Keep this screen open while entering your PIN.",
+                        fontSize = 12.sp,
+                        color = PrimaryBlue,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+
                 is PaymentPayState.Success -> {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_verified),
@@ -327,7 +351,7 @@ fun MpesaExpressPayBottomSheet(
                         modifier = Modifier.size(64.dp)
                     )
                     Text(
-                        text = "STK Prompt Sent!",
+                        text = "Payment Complete!",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 16.dp)
