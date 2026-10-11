@@ -1,9 +1,19 @@
-# Supabase SQL Schema for WellMe Merchant B2C Loans & Till Tracking
+# Supabase SQL Schema Update for Merchant M-Pesa Number & Till Tracking
 
-Run the following SQL script in your **Supabase SQL Editor** to create the tables, triggers, and stored procedures required for tracking till balances, merchant loan requests, and B2C disbursements via Safaricom Daraja Sandbox API.
+Run the following SQL script in your **Supabase SQL Editor** to update your database schema with merchant M-Pesa phone number and till/paybill attributes for B2C loan disbursements and payment withdrawals.
 
 ```sql
--- 1. Create central community till / pool table to track total ecosystem liquidity
+-- 1. Add till_number and mpesa_phone_number columns to merchants table
+ALTER TABLE IF EXISTS public.merchants
+ADD COLUMN IF NOT EXISTS till_number TEXT DEFAULT '174379',
+ADD COLUMN IF NOT EXISTS mpesa_phone_number TEXT;
+
+-- 2. Add till_number and mpesa_phone_number columns to merchant_kyc table
+ALTER TABLE IF EXISTS public.merchant_kyc
+ADD COLUMN IF NOT EXISTS till_number TEXT DEFAULT '174379',
+ADD COLUMN IF NOT EXISTS mpesa_phone_number TEXT;
+
+-- 3. Create central community till / pool table to track total ecosystem liquidity
 CREATE TABLE IF NOT EXISTS public.community_till_balance (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     till_number TEXT NOT NULL UNIQUE,
@@ -16,14 +26,15 @@ INSERT INTO public.community_till_balance (till_number, balance_in_cents)
 VALUES ('174379', 0)
 ON CONFLICT (till_number) DO NOTHING;
 
--- 2. Create disbursed_merchant_loans table to track all merchant capital requests and B2C disbursements
+-- 4. Create disbursed_merchant_loans table to track all merchant capital requests and B2C disbursements
 CREATE TABLE IF NOT EXISTS public.disbursed_merchant_loans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    merchant_id UUID NOT NULL,
+    merchant_id UUID NOT NULL REFERENCES public.merchants(merchant_id) ON DELETE CASCADE,
     business_name TEXT NOT NULL,
     amount_requested_in_cents BIGINT NOT NULL,
     discount_percentage NUMERIC(5,2) NOT NULL,
     till_number TEXT NOT NULL DEFAULT '174379',
+    mpesa_phone_number TEXT,
     b2c_conversation_id TEXT,
     b2c_transaction_id TEXT,
     status TEXT NOT NULL DEFAULT 'PENDING', -- PENDING, DISBURSED, FAILED, REPAID
@@ -48,45 +59,14 @@ CREATE POLICY "Allow all access on disbursed_merchant_loans"
     USING (true)
     WITH CHECK (true);
 
--- 3. Trigger Function to automatically sync community till balance to the total sum of ALL student wallets
-CREATE OR REPLACE FUNCTION public.sync_community_till_from_wallets()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    v_total_balance BIGINT;
-BEGIN
-    -- Calculate sum of all student wallet balances in cents
-    SELECT COALESCE(SUM(balance_in_cents), 0) INTO v_total_balance
-    FROM public.student_wallets;
-
-    -- Update community_till_balance for till '174379'
-    INSERT INTO public.community_till_balance (till_number, balance_in_cents, updated_at)
-    VALUES ('174379', v_total_balance, NOW())
-    ON CONFLICT (till_number)
-    DO UPDATE SET
-        balance_in_cents = v_total_balance,
-        updated_at = NOW();
-
-    RETURN NEW;
-END;
-$$;
-
--- Drop trigger if it exists and recreate on student_wallets table
-DROP TRIGGER IF EXISTS trg_sync_till_on_wallet_change ON public.student_wallets;
-
-CREATE TRIGGER trg_sync_till_on_wallet_change
-    AFTER INSERT OR UPDATE ON public.student_wallets
-    FOR EACH STATEMENT
-    EXECUTE FUNCTION public.sync_community_till_from_wallets();
-
--- 4. Stored Procedure for B2C Loan Disbursement with Till Liquidity Check
+-- 5. Stored Procedure for B2C Loan Disbursement with Live Till Liquidity Check
 CREATE OR REPLACE FUNCTION public.request_till_b2c_loan(
     p_merchant_id UUID,
     p_business_name TEXT,
     p_amount_requested_in_cents BIGINT,
     p_discount_percentage NUMERIC(5,2),
-    p_till_number TEXT DEFAULT '174379'
+    p_till_number TEXT DEFAULT '174379',
+    p_mpesa_phone_number TEXT DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -95,7 +75,7 @@ DECLARE
     v_till_balance BIGINT;
     v_loan_id UUID;
 BEGIN
-    -- Ensure till balance is synced with total student wallets first
+    -- Get live sum of all student wallet balances in cents
     SELECT COALESCE(SUM(balance_in_cents), 0) INTO v_till_balance
     FROM public.student_wallets;
 
@@ -113,6 +93,7 @@ BEGIN
         amount_requested_in_cents,
         discount_percentage,
         till_number,
+        mpesa_phone_number,
         status
     )
     VALUES (
@@ -121,6 +102,7 @@ BEGIN
         p_amount_requested_in_cents,
         p_discount_percentage,
         p_till_number,
+        p_mpesa_phone_number,
         'DISBURSED'
     )
     RETURNING id INTO v_loan_id;
