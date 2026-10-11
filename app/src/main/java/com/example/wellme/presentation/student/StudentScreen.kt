@@ -60,7 +60,6 @@ fun StudentScreen(
         studentKyc = studentKyc,
         onScan = { merchantId, amount -> viewModel.scanMerchant(merchantId, amount) },
         onResetScanner = { viewModel.resetScanner() },
-        onConfirmPayment = { viewModel.confirmPayment() },
         onDeposit = { amount, phone -> viewModel.initiateDeposit(amount, phone) },
         onRefresh = { viewModel.refreshWallet() },
         onProfileClick = onProfileClick,
@@ -79,7 +78,6 @@ fun StudentContent(
     studentKyc: com.example.wellme.data.remote.model.StudentKyc?,
     onScan: (String, Long) -> Unit,
     onResetScanner: () -> Unit,
-    onConfirmPayment: () -> Unit,
     onDeposit: (Double, String) -> Unit,
     onRefresh: () -> Unit,
     onProfileClick: () -> Unit = {},
@@ -261,8 +259,7 @@ fun StudentContent(
                 onScan = { merchantId, amount ->
                     isScanning = false
                     onScan(merchantId, amount)
-                },
-                onConfirm = onConfirmPayment
+                }
             )
         }
     }
@@ -1061,7 +1058,6 @@ fun StudentScreenPreview() {
             ),
             onScan = { _, _ -> },
             onResetScanner = {},
-            onConfirmPayment = {},
             onDeposit = { _, _ -> },
             onRefresh = {}
         )
