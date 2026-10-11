@@ -26,11 +26,13 @@ data class StkPushRequest(
 
 @Serializable
 data class StkPushResponse(
-    @SerialName("MerchantRequestID") val merchantRequestId: String,
-    @SerialName("CheckoutRequestID") val checkoutRequestId: String,
-    @SerialName("ResponseCode") val responseCode: String,
-    @SerialName("ResponseDescription") val responseDescription: String,
-    @SerialName("CustomerMessage") val customerMessage: String
+    @SerialName("MerchantRequestID") val merchantRequestId: String? = null,
+    @SerialName("CheckoutRequestID") val checkoutRequestId: String? = null,
+    @SerialName("ResponseCode") val responseCode: String? = null,
+    @SerialName("ResponseDescription") val responseDescription: String? = null,
+    @SerialName("CustomerMessage") val customerMessage: String? = null,
+    @SerialName("errorMessage") val errorMessage: String? = null,
+    @SerialName("errorCode") val errorCode: String? = null
 )
 
 @Serializable

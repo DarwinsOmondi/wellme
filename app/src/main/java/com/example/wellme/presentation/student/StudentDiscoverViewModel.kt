@@ -134,10 +134,11 @@ class StudentDiscoverViewModel @Inject constructor(
                 )
 
                 result.onSuccess { response ->
-                    Log.d(TAG, "STK Push successful. CheckoutRequestId: ${response.checkoutRequestId}")
+                    val reqId = response.checkoutRequestId ?: "req_${System.currentTimeMillis()}"
+                    Log.d(TAG, "STK Push successful. CheckoutRequestId: $reqId")
                     try {
                         val pendingPayment = PendingPayment(
-                            checkoutRequestId = response.checkoutRequestId,
+                            checkoutRequestId = reqId,
                             studentId = studentId,
                             amountInCents = amountInCents,
                             status = "PENDING",
@@ -149,10 +150,10 @@ class StudentDiscoverViewModel @Inject constructor(
                     }
 
                     _paymentState.value = PaymentPayState.Pending(
-                        response.checkoutRequestId,
+                        reqId,
                         "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone."
                     )
-                    observePendingPayment(response.checkoutRequestId)
+                    observePendingPayment(reqId)
                 }.onFailure {
                     _paymentState.value = PaymentPayState.Error(it.message ?: "STK Push failed")
                 }

@@ -220,10 +220,11 @@ class StudentViewModel @Inject constructor(
                 )
 
                 result.onSuccess { response ->
-                    Log.d(TAG, "STK Push request successful. CheckoutRequestId: ${response.checkoutRequestId}")
+                    val reqId = response.checkoutRequestId ?: "req_${System.currentTimeMillis()}"
+                    Log.d(TAG, "STK Push request successful. CheckoutRequestId: $reqId")
                     try {
                         val pendingPayment = PendingPayment(
-                            checkoutRequestId = response.checkoutRequestId,
+                            checkoutRequestId = reqId,
                             studentId = studentId,
                             amountInCents = amountInCents,
                             status = "PENDING",
@@ -235,10 +236,10 @@ class StudentViewModel @Inject constructor(
                     }
 
                     _sheetState.value = SheetState.Pending(
-                        response.checkoutRequestId,
+                        reqId,
                         "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone."
                     )
-                    observePendingCheckout(response.checkoutRequestId)
+                    observePendingCheckout(reqId)
                     refreshWallet()
                 }.onFailure {
                     Log.e(TAG, "Failed to initiate M-Pesa STK Push", it)
