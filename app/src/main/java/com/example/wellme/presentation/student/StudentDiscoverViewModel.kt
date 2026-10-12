@@ -6,12 +6,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wellme.domain.model.MerchantItem
 import com.example.wellme.domain.model.MerchantProfile
-import com.example.wellme.domain.model.PendingPayment
 import com.example.wellme.domain.repository.AuthRepository
 import com.example.wellme.domain.repository.MerchantInventoryRepository
 import com.example.wellme.domain.repository.MerchantRepository
-import com.example.wellme.domain.repository.WalletRepository
-import com.example.wellme.domain.usecase.InitiateStkPushUseCase
+import com.example.wellme.domain.usecase.ProcessPaymentUseCase
+import com.example.wellme.util.ErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,7 +20,6 @@ import javax.inject.Inject
 sealed interface PaymentPayState {
     object Idle : PaymentPayState
     object Processing : PaymentPayState
-    data class Pending(val checkoutRequestId: String, val message: String) : PaymentPayState
     data class Success(val message: String) : PaymentPayState
     data class Error(val message: String) : PaymentPayState
 }
@@ -31,9 +29,8 @@ sealed interface PaymentPayState {
 class StudentDiscoverViewModel @Inject constructor(
     private val merchantRepository: MerchantRepository,
     private val inventoryRepository: MerchantInventoryRepository,
-    private val walletRepository: WalletRepository,
     private val authRepository: AuthRepository,
-    private val initiateStkPushUseCase: InitiateStkPushUseCase,
+    private val processPaymentUseCase: ProcessPaymentUseCase,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -97,74 +94,29 @@ class StudentDiscoverViewModel @Inject constructor(
         _cart.value = emptyList()
     }
 
-    private var pendingJob: kotlinx.coroutines.Job? = null
-
-    fun observePendingPayment(checkoutRequestId: String) {
-        pendingJob?.cancel()
-        pendingJob = viewModelScope.launch {
-            walletRepository.observePendingPayment(checkoutRequestId)
-                .collect { pending ->
-                    Log.d(TAG, "Observed payment status: ${pending.status}")
-                    if (pending.status.equals("SUCCESS", ignoreCase = true)) {
-                        _paymentState.value = PaymentPayState.Success("Payment confirmed successfully! Thank you.")
-                        _cart.value = emptyList()
-                    } else if (pending.status.equals("FAILED", ignoreCase = true)) {
-                        _paymentState.value = PaymentPayState.Error("M-Pesa payment failed or was cancelled.")
-                    }
-                }
-        }
-    }
-
-    fun payMpesaExpress(amountInKsh: Double, phoneNumber: String) {
-        val amountInCents = (amountInKsh * 100).toLong()
-        if (amountInKsh <= 0) return
+    fun checkoutCart(merchantId: String, originalAmountInCents: Long) {
+        if (originalAmountInCents <= 0) return
         viewModelScope.launch {
             _paymentState.value = PaymentPayState.Processing
             try {
-                val result = initiateStkPushUseCase(
-                    consumerKey = com.example.wellme.BuildConfig.MPESA_CONSUMER_KEY,
-                    consumerSecret = com.example.wellme.BuildConfig.MPESA_CONSUMER_SECRET,
-                    businessShortCode = "174379",
-                    passkey = com.example.wellme.BuildConfig.MPESA_PASSKEY,
-                    amount = amountInKsh.toInt().toString(),
-                    phoneNumber = phoneNumber,
-                    callbackUrl = com.example.wellme.BuildConfig.MPESA_CALLBACK_URL,
-                    accountReference = "Vendor Payment",
-                    transactionDesc = "Checkout Payment"
+                val transaction = processPaymentUseCase(
+                    studentId = studentId,
+                    merchantId = merchantId,
+                    originalAmountInCents = originalAmountInCents
                 )
-
-                result.onSuccess { response ->
-                    val reqId = response.checkoutRequestId ?: "req_${System.currentTimeMillis()}"
-                    Log.d(TAG, "STK Push successful. CheckoutRequestId: $reqId")
-                    try {
-                        val pendingPayment = PendingPayment(
-                            checkoutRequestId = reqId,
-                            studentId = studentId,
-                            amountInCents = amountInCents,
-                            status = "PENDING",
-                            timestamp = System.currentTimeMillis()
-                        )
-                        walletRepository.logPendingPayment(pendingPayment)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to log pending payment", e)
-                    }
-
-                    _paymentState.value = PaymentPayState.Pending(
-                        reqId,
-                        "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone."
-                    )
-                    observePendingPayment(reqId)
-                }.onFailure {
-                    _paymentState.value = PaymentPayState.Error(it.message ?: "STK Push failed")
-                }
+                Log.d(TAG, "Checkout successful. Net debited: ${transaction.amountInCents}, Discount applied: ${transaction.discountAppliedInCents}")
+                _paymentState.value = PaymentPayState.Success(
+                    "Payment of KSh ${transaction.amountInCents / 100.0} completed successfully! (Saved KSh ${transaction.discountAppliedInCents / 100.0} with community pool discount)."
+                )
+                _cart.value = emptyList()
             } catch (e: Exception) {
-                _paymentState.value = PaymentPayState.Error(e.message ?: "Error initiating payment")
+                Log.e(TAG, "Checkout failed", e)
+                _paymentState.value = PaymentPayState.Error(ErrorMapper.getUserFriendlyMessage(e))
             }
         }
     }
 
     fun clearPaymentState() {
-        pendingJob?.cancel()
         _paymentState.value = PaymentPayState.Idle
     }
 }

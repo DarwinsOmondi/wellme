@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -21,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -57,7 +55,7 @@ fun StudentMerchantDetailScreen(
         onClearCart = { viewModel.clearCart() },
         onAddToCart = { viewModel.addToCart(it) },
         onRemoveFromCart = { viewModel.removeFromCart(it) },
-        onPayMpesaExpress = { amount, phone -> viewModel.payMpesaExpress(amount, phone) },
+        onCheckoutCart = { merchantId, amount -> viewModel.checkoutCart(merchantId, amount) },
         onClearPaymentState = { viewModel.clearPaymentState() }
     )
 }
@@ -74,10 +72,10 @@ fun StudentMerchantDetailContent(
     onClearCart: () -> Unit,
     onAddToCart: (MerchantItem) -> Unit,
     onRemoveFromCart: (MerchantItem) -> Unit,
-    onPayMpesaExpress: (Double, String) -> Unit,
+    onCheckoutCart: (String, Long) -> Unit,
     onClearPaymentState: () -> Unit
 ) {
-    var showMpesaExpressSheet by remember { mutableStateOf(false) }
+    var showCheckoutSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -134,7 +132,7 @@ fun StudentMerchantDetailContent(
                 }
             }
 
-            // Bottom Cart / Pay Area
+            // Bottom Cart / Checkout Area
             if (cart.isNotEmpty()) {
                 Surface(
                     modifier = Modifier
@@ -164,28 +162,34 @@ fun StudentMerchantDetailContent(
                         }
 
                         Button(
-                            onClick = { showMpesaExpressSheet = true },
+                            onClick = { showCheckoutSheet = true },
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                             shape = RoundedCornerShape(24.dp),
                             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                         ) {
-                            Text("Pay via M-Pesa", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text("Checkout", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         }
                     }
                 }
             }
         }
         
-        if (showMpesaExpressSheet || paymentState !is PaymentPayState.Idle) {
-            MpesaExpressPayBottomSheet(
+        if (showCheckoutSheet || paymentState !is PaymentPayState.Idle) {
+            val discountTier = merchant?.discountTier ?: 0.15
+            val discountApplied = Math.round(total * 100 * discountTier)
+            val netAmount = (total * 100).toLong() - discountApplied
+
+            WalletCheckoutBottomSheet(
                 merchantName = merchant?.businessName ?: "Verified Vendor",
-                amountKsh = total,
+                originalAmountInCents = (total * 100).toLong(),
+                discountAppliedInCents = discountApplied,
+                netAmountInCents = netAmount,
                 paymentState = paymentState,
-                onConfirmPay = { phone ->
-                    onPayMpesaExpress(total, phone)
+                onConfirmCheckout = {
+                    onCheckoutCart(merchant?.merchantId ?: "", (total * 100).toLong())
                 },
                 onDismiss = {
-                    showMpesaExpressSheet = false
+                    showCheckoutSheet = false
                     onClearPaymentState()
                 }
             )
@@ -195,15 +199,15 @@ fun StudentMerchantDetailContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MpesaExpressPayBottomSheet(
+fun WalletCheckoutBottomSheet(
     merchantName: String,
-    amountKsh: Double,
+    originalAmountInCents: Long,
+    discountAppliedInCents: Long,
+    netAmountInCents: Long,
     paymentState: PaymentPayState,
-    onConfirmPay: (String) -> Unit,
+    onConfirmCheckout: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var phoneNumber by remember { mutableStateOf("254712345678") }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -217,7 +221,7 @@ fun MpesaExpressPayBottomSheet(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "M-Pesa Express Checkout",
+                text = "Wallet Checkout",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1D1B20)
@@ -248,17 +252,28 @@ fun MpesaExpressPayBottomSheet(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Merchant Till", color = Color.Gray, fontSize = 14.sp)
-                                Text("Till 174379", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = PrimaryBlue)
+                                Text("Original Amount", color = Color.Gray, fontSize = 14.sp)
+                                Text(String.format(Locale.getDefault(), "KSh %,.2f", originalAmountInCents / 100.0), fontWeight = FontWeight.Medium)
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Community Pool Discount", color = Color(0xFF2E7D32), fontWeight = FontWeight.Medium)
+                                Text(
+                                    text = String.format(Locale.getDefault(), "-KSh %,.2f", discountAppliedInCents / 100.0),
+                                    color = Color(0xFF2E7D32),
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                             HorizontalDivider(color = Color(0xFFE0E0E0))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Fixed Payable Amount", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Text("Net Payable from Wallet", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 Text(
-                                    text = String.format(Locale.getDefault(), "KSh %,.2f", amountKsh),
+                                    text = String.format(Locale.getDefault(), "KSh %,.2f", netAmountInCents / 100.0),
                                     fontWeight = FontWeight.ExtraBold,
                                     fontSize = 18.sp,
                                     color = PrimaryBlue
@@ -267,23 +282,10 @@ fun MpesaExpressPayBottomSheet(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    OutlinedTextField(
-                        value = phoneNumber,
-                        onValueChange = { phoneNumber = it },
-                        label = { Text("Phone Number to Prompt") },
-                        placeholder = { Text("e.g. 254712345678") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
-                        onClick = { if (phoneNumber.isNotBlank()) onConfirmPay(phoneNumber) },
+                        onClick = onConfirmCheckout,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -291,7 +293,7 @@ fun MpesaExpressPayBottomSheet(
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                     ) {
                         Text(
-                            text = "Send M-Pesa STK Prompt",
+                            text = "Pay from In-App Wallet",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -303,42 +305,16 @@ fun MpesaExpressPayBottomSheet(
                     CircularProgressIndicator(color = PrimaryBlue, modifier = Modifier.size(48.dp))
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
-                        text = "Sending M-Pesa STK Prompt...",
+                        text = "Processing Checkout...",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Please check your phone and enter your M-Pesa PIN.",
+                        text = "Debiting wallet and recording merchant payment atomically.",
                         fontSize = 14.sp,
                         color = Color.Gray,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-
-                is PaymentPayState.Pending -> {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    CircularProgressIndicator(color = PrimaryBlue, modifier = Modifier.size(48.dp))
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Text(
-                        text = "Waiting for M-Pesa PIN...",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = paymentState.message,
-                        fontSize = 14.sp,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Keep this screen open while entering your PIN.",
-                        fontSize = 12.sp,
-                        color = PrimaryBlue,
-                        fontWeight = FontWeight.Medium
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                 }
@@ -382,7 +358,7 @@ fun MpesaExpressPayBottomSheet(
                         modifier = Modifier.size(64.dp)
                     )
                     Text(
-                        text = "Payment Request Failed",
+                        text = "Checkout Failed",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 16.dp),

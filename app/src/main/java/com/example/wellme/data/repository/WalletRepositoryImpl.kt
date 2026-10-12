@@ -122,9 +122,9 @@ class WalletRepositoryImpl @Inject constructor(
                     }
                 }
                 .decodeSingleOrNull<StudentWalletDto>()
-            
+
             Log.d(tag, "Remote wallet fetch result for $studentId: ${dto?.balanceInCents ?: "Not found"}")
-            
+
             dto?.let {
                 walletDao.insertWallet(StudentWalletEntity.fromDomain(it.toDomain()))
                 Log.d(tag, "Local wallet updated for $studentId")
@@ -244,7 +244,7 @@ class WalletRepositoryImpl @Inject constructor(
                     emit(current.toDomain())
                     if (current.status != "PENDING") {
                         Log.i(tag, "[Observe] Final state reached via polling: ${current.status}. Exiting loop.")
-                        break 
+                        break
                     }
                 } else {
                     Log.w(tag, "[Polling] No record found yet for $checkoutRequestId")
@@ -252,11 +252,11 @@ class WalletRepositoryImpl @Inject constructor(
             } catch (e: Exception) {
                 Log.e(tag, "[Polling] Error during attempt $attempt for $checkoutRequestId", e)
             }
-            
+
             Log.v(tag, "[Polling] Waiting 3s before next check...")
             delay(3000)
         }
-        
+
         Log.d(tag, "[Observe] Handing over to realtime update flow for $checkoutRequestId")
         emitAll(updateFlow)
     }.flowOn(Dispatchers.IO)

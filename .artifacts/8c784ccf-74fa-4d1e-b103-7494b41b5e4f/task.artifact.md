@@ -1,0 +1,3 @@
+- [ ] Remove direct client-side writes in `WalletRepositoryImpl.kt` `[/]`
+- [ ] Implement wallet-balance checkout RPC in `WalletRepositoryImpl.kt` and `StudentDiscoverViewModel.kt` `[ ]`
+- [ ] Run unit tests and verify build `[ ]`
