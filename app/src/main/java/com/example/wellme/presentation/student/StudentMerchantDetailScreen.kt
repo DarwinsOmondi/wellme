@@ -411,8 +411,6 @@ fun MpesaExpressPayBottomSheet(
 
 @Composable
 fun MerchantSummaryBar(merchant: MerchantProfile) {
-    var showFundDialog by remember { mutableStateOf(false) }
-
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
@@ -444,43 +442,12 @@ fun MerchantSummaryBar(merchant: MerchantProfile) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "WellMe Registered Vendor • Tap Fund to Support",
+                    text = "WellMe Registered Vendor • Instant Discount Applied",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray
                 )
             }
-            Button(
-                onClick = { showFundDialog = true },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(20.dp),
-                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-            ) {
-                Text("Fund", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            }
         }
-    }
-
-    if (showFundDialog) {
-        AlertDialog(
-            onDismissRequest = { showFundDialog = false },
-            title = { Text("Support ${merchant.businessName}", fontWeight = FontWeight.Bold) },
-            text = {
-                Text("Contribute to this merchant's community pool to help them expand stock and earn community investment rewards.")
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showFundDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("Donate via M-Pesa")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showFundDialog = false }) {
-                    Text("Cancel", color = Color.Gray)
-                }
-            }
-        )
     }
 }
 

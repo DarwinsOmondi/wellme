@@ -5,19 +5,21 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
@@ -32,12 +34,13 @@ import com.example.wellme.domain.model.StudentWallet
 import com.example.wellme.domain.model.Transaction
 import com.example.wellme.domain.model.TransactionType
 import com.example.wellme.presentation.common.BottomSheetContent
-import com.example.wellme.presentation.common.ScannerOverlay
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.PrimaryBlueDark
+import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 import com.example.wellme.util.GuestSession
-import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,8 +61,6 @@ fun StudentScreen(
         transactions = transactions,
         sheetState = sheetState,
         studentKyc = studentKyc,
-        onScan = { merchantId, amount -> viewModel.scanMerchant(merchantId, amount) },
-        onResetScanner = { viewModel.resetScanner() },
         onDeposit = { amount, phone -> viewModel.initiateDeposit(amount, phone) },
         onRefresh = { viewModel.refreshWallet() },
         onProfileClick = onProfileClick,
@@ -76,8 +77,6 @@ fun StudentContent(
     transactions: List<Transaction>,
     sheetState: SheetState,
     studentKyc: com.example.wellme.data.remote.model.StudentKyc?,
-    onScan: (String, Long) -> Unit,
-    onResetScanner: () -> Unit,
     onDeposit: (Double, String) -> Unit,
     onRefresh: () -> Unit,
     onProfileClick: () -> Unit = {},
@@ -85,9 +84,7 @@ fun StudentContent(
     onNotificationClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var isScanning by remember { mutableStateOf(false) }
     var showDepositDialog by remember { mutableStateOf(false) }
-    var showNotificationsDialog by remember { mutableStateOf(false) }
     var showQuickActionsDialog by remember { mutableStateOf(false) }
     var showAllTransactionsDialog by remember { mutableStateOf(false) }
     var showAuthRequiredDialog by remember { mutableStateOf(false) }
@@ -110,89 +107,108 @@ fun StudentContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp)
+                .background(Color(0xFFF8F9FB))
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 100.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                StudentHeader(
-                    initials = initials,
-                    avatarUrl = studentKyc?.avatarUrl,
-                    onProfileClick = onProfileClick,
-                    onNotificationClick = onNotificationClick
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                BalanceCard(
-                    balance = String.format(Locale.getDefault(), "KSh %,.2f", balanceKsh),
-                    onDepositClick = {
-                        if (isGuest) showAuthRequiredDialog = true
-                        else showDepositDialog = true
-                    },
-                    onRefreshClick = onRefresh,
-                    onMoreClick = {
-                        if (isGuest) showAuthRequiredDialog = true
-                        else showQuickActionsDialog = true
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                DiscoverVendorsBanner(onClick = onDiscoverClick)
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                RecentActivitySection(
-                    transactions = transactions,
-                    onSeeAllClick = { showAllTransactionsDialog = true }
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            BottomActionButton(
-                onClick = {
-                    if (isGuest) showAuthRequiredDialog = true
-                    else isScanning = true
-                },
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 24.dp, top = 16.dp)
+            // Header
+            StudentHeader(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                initials = initials,
+                avatarUrl = studentKyc?.avatarUrl,
+                onProfileClick = onProfileClick,
+                onNotificationClick = onNotificationClick
             )
-        }
 
-        if (showAuthRequiredDialog) {
-            AlertDialog(
-                onDismissRequest = { showAuthRequiredDialog = false },
-                title = { Text("Sign In Required", fontWeight = FontWeight.Bold) },
-                text = { Text("Please sign in or create an account to deposit funds, make payments, and access personal wallet features.") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showAuthRequiredDialog = false
-                            GuestSession.isGuest = false
-                            onProfileClick()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Text("Sign In / Register")
-                    }
+            // Balance Card
+            StudentBalanceCard(
+                balanceKsh = balanceKsh,
+                modifier = Modifier.padding(horizontal = 20.dp),
+                onDepositClick = {
+                    if (isGuest) showAuthRequiredDialog = true
+                    else showDepositDialog = true
                 },
-                dismissButton = {
-                    TextButton(onClick = { showAuthRequiredDialog = false }) {
-                        Text("Cancel")
+                onDiscoverClick = onDiscoverClick,
+                onQuickActionsClick = { showQuickActionsDialog = true }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Recent Transactions / Activity Section
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Recent Transactions",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1C1E)
+                )
+
+                if (transactions.isNotEmpty()) {
+                    TextButton(onClick = { showAllTransactionsDialog = true }) {
+                        Text("See All", color = PrimaryBlue, fontWeight = FontWeight.Bold)
                     }
                 }
-            )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (transactions.isEmpty()) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.White,
+                    shadowElevation = 1.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Receipt,
+                            contentDescription = null,
+                            tint = Color.LightGray,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "No recent transactions",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Discover campus vendors and order food or top up your wallet via M-Pesa.",
+                            fontSize = 12.sp,
+                            color = Color.LightGray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    transactions.take(5).forEach { tx ->
+                        TransactionItem(transaction = tx)
+                    }
+                }
+            }
         }
 
+        // Dialogs
         if (showDepositDialog) {
             DepositDialog(
-                initialPhoneNumber = studentKyc?.phoneNumber ?: "254",
                 onDismiss = { showDepositDialog = false },
                 onConfirm = { amount, phone ->
                     showDepositDialog = false
@@ -201,22 +217,8 @@ fun StudentContent(
             )
         }
 
-        if (showNotificationsDialog) {
-            NotificationsDialog(
-                onDismiss = { showNotificationsDialog = false }
-            )
-        }
-
         if (showQuickActionsDialog) {
             WalletQuickActionsDialog(
-                onPayClick = {
-                    showQuickActionsDialog = false
-                    if (isGuest) {
-                        showAuthRequiredDialog = true
-                    } else {
-                        isScanning = true
-                    }
-                },
                 onDepositClick = {
                     showQuickActionsDialog = false
                     if (isGuest) {
@@ -244,23 +246,34 @@ fun StudentContent(
             )
         }
 
-        // Payment Confirmation Screen (includes Scanner and BottomSheet)
-        AnimatedVisibility(
-            visible = isScanning || sheetState !is SheetState.Idle,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            PaymentConfirmationScreen(
-                state = sheetState,
-                onClose = {
-                    isScanning = false
-                    onResetScanner()
-                },
-                onScan = { merchantId, amount ->
-                    isScanning = false
-                    onScan(merchantId, amount)
+        if (showAuthRequiredDialog) {
+            AuthRequiredDialog(
+                onDismiss = { showAuthRequiredDialog = false },
+                onSignIn = {
+                    showAuthRequiredDialog = false
+                    onProfileClick()
                 }
             )
+        }
+
+        // Deposit Status Bottom Sheet
+        AnimatedVisibility(
+            visible = sheetState !is SheetState.Idle,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                BottomSheetContent(
+                    state = sheetState,
+                    onDismiss = {}
+                )
+            }
         }
     }
 }
@@ -274,82 +287,94 @@ fun StudentHeader(
     onNotificationClick: () -> Unit = {}
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .clickable(onClick = onProfileClick),
-            contentAlignment = Alignment.Center
-        ) {
-            if (!avatarUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = avatarUrl,
-                    contentDescription = "Profile Picture",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    placeholder = painterResource(id = R.drawable.ic_account_circle),
-                    error = painterResource(id = R.drawable.ic_account_circle)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(PrimaryBlue, PrimaryBlueDark)
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initials,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clickable { onProfileClick() },
+                shape = CircleShape,
+                color = PrimaryBlueLight
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    if (!avatarUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = initials,
+                            color = PrimaryBlue,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
                 }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column {
+                Text(
+                    text = "Welcome back,",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+                Text(
+                    text = "Student Ecosystem",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1C1E)
+                )
             }
         }
 
-        Text(
-            text = stringResource(R.string.app_name),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
-        )
-
-        IconButton(onClick = onNotificationClick) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_notifications),
-                contentDescription = "Notifications",
-                tint = Color.Gray,
-                modifier = Modifier.size(24.dp)
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Surface(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clickable { onNotificationClick() },
+                shape = CircleShape,
+                color = Color.White,
+                shadowElevation = 1.dp
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_notifications),
+                        contentDescription = "Notifications",
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun BalanceCard(
-    balance: String,
+fun StudentBalanceCard(
+    balanceKsh: Double,
     modifier: Modifier = Modifier,
-    onDepositClick: () -> Unit = {},
-    onRefreshClick: () -> Unit = {},
-    onMoreClick: () -> Unit = {}
+    onDepositClick: () -> Unit,
+    onDiscoverClick: () -> Unit,
+    onQuickActionsClick: () -> Unit
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = PrimaryBlue),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -357,284 +382,162 @@ fun BalanceCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.available_balance),
-                    color = Color.White.copy(alpha = 0.7f),
-                     fontSize = 12.sp,
+                    text = "Available Balance",
+                    color = Color.White.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_wallet),
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = balance,
-                    color = Color.White,
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                IconButton(onClick = onRefreshClick) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_refresh),
-                        contentDescription = "Refresh Wallet",
-                        tint = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier.size(28.dp)
-                    )
+                Surface(
+                    onClick = onQuickActionsClick,
+                    shape = RoundedCornerShape(100.dp),
+                    color = Color.White.copy(alpha = 0.2f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Actions",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = String.format(Locale.getDefault(), "KSh %,.2f", balanceKsh),
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.ExtraBold
+                ),
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
+                    onClick = onDiscoverClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                    shape = RoundedCornerShape(26.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_store),
+                        contentDescription = null,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Discover Vendors",
+                        color = PrimaryBlue,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
+                    )
+                }
+
+                OutlinedButton(
                     onClick = onDepositClick,
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                        .height(52.dp),
+                    shape = RoundedCornerShape(26.dp),
+                    border = BorderStroke(1.5.dp, Color.White),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_add),
                         contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(R.string.deposit),
-                        fontWeight = FontWeight.Bold
+                        text = "Deposit",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp
                     )
                 }
-
-                Surface(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable(onClick = onMoreClick),
-                    color = MaterialTheme.colorScheme.primaryContainer
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_more_horiz),
-                            contentDescription = "More Options",
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun RecentActivitySection(
-    transactions: List<Transaction>,
-    onSeeAllClick: () -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.recent_activity),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-            TextButton(onClick = onSeeAllClick) {
-                Text(
-                    text = stringResource(R.string.see_all),
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (transactions.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "No recent activity found.",
-                    color = Color.Gray,
-                    fontSize = 14.sp
-                )
-            }
-        } else {
-            transactions.take(3).forEach { transaction ->
-                TransactionItem(transaction = transaction)
-                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
 }
 
 @Composable
-fun TransactionItem(
-    transaction: Transaction,
-    modifier: Modifier = Modifier
-) {
-    com.example.wellme.theme.NeumorphicCard(
-        modifier = modifier.fillMaxWidth(),
-        cornerRadius = 16.dp,
-        elevation = 4.dp
+fun TransactionItem(transaction: Transaction) {
+    val dateFormat = remember { SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()) }
+    val timeString = dateFormat.format(Date(transaction.timestamp))
+    val isTopUp = transaction.type == TransactionType.STIPEND || transaction.merchantId == "mpesa"
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = Color.White,
+        shadowElevation = 1.dp
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (transaction.merchantId == "mpesa") MaterialTheme.colorScheme.primaryContainer
-                        else Color.LightGray.copy(alpha = 0.3f)
-                    ),
-                contentAlignment = Alignment.Center
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = CircleShape,
+                color = if (isTopUp) PrimaryBlueLight else Color(0xFFE8F5E9)
             ) {
-                Icon(
-                    painter = painterResource(
-                        id = if (transaction.merchantId == "mpesa") R.drawable.ic_account_balance
-                        else R.drawable.ic_restaurant
-                    ),
-                    contentDescription = null,
-                    tint = if (transaction.merchantId == "mpesa") MaterialTheme.colorScheme.primary
-                    else Color.Gray,
-                    modifier = Modifier.size(24.dp)
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = if (isTopUp) Icons.Default.AccountBalanceWallet else Icons.Default.Store,
+                        contentDescription = null,
+                        tint = if (isTopUp) PrimaryBlue else Color(0xFF2E7D32),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (transaction.merchantId == "mpesa") stringResource(R.string.mpesa_top_up)
-                    else "Merchant: ${transaction.merchantId?.take(8)?.uppercase() ?: "..."}",
+                    text = if (isTopUp) "M-Pesa Wallet Top Up" else "Vendor Checkout",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontSize = 15.sp,
+                    color = Color(0xFF1A1C1E)
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (transaction.merchantId != "mpesa") {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_security),
-                            contentDescription = null,
-                            tint = Color.Gray,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Verified Transaction",
-                            color = Color.Gray,
-                            fontSize = 12.sp
-                        )
-                    } else {
-                        val dateFormat = remember {
-                            java.text.SimpleDateFormat(
-                                "MMM dd, hh:mm a",
-                                java.util.Locale.getDefault()
-                            )
-                        }
-                        Text(
-                            text = dateFormat.format(java.util.Date(transaction.timestamp)),
-                            color = Color.Gray,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-            }
-
-            Column(horizontalAlignment = Alignment.End) {
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = if (transaction.type == TransactionType.STIPEND)
-                        String.format(
-                            Locale.getDefault(),
-                            "+KSh %,d",
-                            transaction.amountInCents / 100
-                        )
-                    else String.format(
-                        Locale.getDefault(),
-                        "-KSh %,d",
-                        transaction.amountInCents / 100
-                    ),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = if (transaction.type == TransactionType.STIPEND) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                )
-                Icon(
-                    painter = painterResource(
-                        id = if (transaction.type == TransactionType.STIPEND)
-                            R.drawable.ic_arrow_upward
-                        else R.drawable.ic_arrow_downward
-                    ),
-                    contentDescription = null,
-                    tint = if (transaction.type == TransactionType.STIPEND) MaterialTheme.colorScheme.primary else Color(
-                        0xFFD32F2F
-                    ),
-                    modifier = Modifier.size(16.dp)
+                    text = timeString,
+                    fontSize = 12.sp,
+                    color = Color.Gray
                 )
             }
-        }
-    }
-}
 
-@Composable
-fun BottomActionButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(64.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_qr_code),
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = stringResource(R.string.scan_to_pay_save),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
+                text = String.format(Locale.getDefault(), "%sKSh %,.2f", if (isTopUp) "+" else "-", transaction.amountInCents / 100.0),
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 16.sp,
+                color = if (isTopUp) PrimaryBlue else Color(0xFF2E7D32)
             )
         }
     }
 }
-
 
 @Composable
 fun DepositDialog(
@@ -649,59 +552,44 @@ fun DepositDialog(
         onDismissRequest = onDismiss,
         title = { Text("Deposit via M-Pesa", fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 OutlinedTextField(
                     value = amount,
-                    onValueChange = { if (it.all { char -> char.isDigit() }) amount = it },
+                    onValueChange = { if (it.all { char -> char.isDigit() || char == '.' }) amount = it },
                     label = { Text("Amount (KSh)") },
+                    placeholder = { Text("1000") },
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = MaterialTheme.colorScheme.primary
-                    )
+                    shape = RoundedCornerShape(12.dp)
                 )
+
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone Number") },
-                    placeholder = { Text("2547XXXXXXXX") },
+                    label = { Text("M-Pesa Phone Number") },
+                    placeholder = { Text("254712345678") },
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-                Text(
-                    "You will receive an STK Push on your phone to authorize the payment.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    shape = RoundedCornerShape(12.dp)
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    val amountDouble = amount.toDoubleOrNull()
-                    if (amountDouble != null && phone.isNotBlank()) {
-                        onConfirm(amountDouble, phone)
+                    val amt = amount.toDoubleOrNull() ?: 0.0
+                    if (amt > 0 && phone.isNotBlank()) {
+                        onConfirm(amt, phone.trim())
                     }
                 },
-                enabled = amount.isNotBlank() && phone.length >= 10,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
-                Text("Proceed")
+                Text("Proceed to Prompt", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -713,83 +601,7 @@ fun DepositDialog(
 }
 
 @Composable
-fun NotificationsDialog(
-    onDismiss: () -> Unit
-) {
-    val sampleNotifications = listOf(
-        Triple("M-Pesa Top Up Received", "KSh 1,000 deposited to student wallet.", "10m ago"),
-        Triple(
-            "Vendor Discount Applied",
-            "15% student discount processed at Campus Cafe.",
-            "2h ago"
-        ),
-        Triple("Allowance Verified", "Daily food allowance verified by Campus Admin.", "1d ago")
-    )
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Campus Alerts", fontWeight = FontWeight.Bold)
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_notifications),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                sampleNotifications.forEach { (title, subtitle, time) ->
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFF8F9FB),
-                        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    title,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF1A1C1E)
-                                )
-                                Text(time, fontSize = 11.sp, color = Color.Gray)
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(subtitle, fontSize = 12.sp, color = Color.Gray)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Close")
-            }
-        }
-    )
-}
-
-@Composable
 fun WalletQuickActionsDialog(
-    onPayClick: () -> Unit,
     onDepositClick: () -> Unit,
     onRefreshClick: () -> Unit,
     onProfileClick: () -> Unit,
@@ -803,39 +615,6 @@ fun WalletQuickActionsDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onPayClick() },
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primary
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_qr_code),
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                "Pay / Scan QR Code",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = Color.White
-                            )
-                            Text(
-                                "Pay vendors & food stalls",
-                                fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.8f)
-                            )
-                        }
-                    }
-                }
-
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -863,7 +642,7 @@ fun WalletQuickActionsDialog(
                             Text(
                                 "Top up student wallet instantly",
                                 fontSize = 12.sp,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                             )
                         }
                     }
@@ -874,8 +653,7 @@ fun WalletQuickActionsDialog(
                         .fillMaxWidth()
                         .clickable { onRefreshClick() },
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    color = Color(0xFFF1F5F9)
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
@@ -884,17 +662,21 @@ fun WalletQuickActionsDialog(
                         Icon(
                             painter = painterResource(id = R.drawable.ic_refresh),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface
+                            tint = Color.DarkGray
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                "Refresh Wallet Balance",
+                                "Refresh Balance",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Color.DarkGray
                             )
-                            Text("Sync latest transactions", fontSize = 12.sp, color = Color.Gray)
+                            Text(
+                                "Sync latest transactions",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
                         }
                     }
                 }
@@ -904,28 +686,27 @@ fun WalletQuickActionsDialog(
                         .fillMaxWidth()
                         .clickable { onProfileClick() },
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    color = Color(0xFFF1F5F9)
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_security),
+                            painter = painterResource(id = R.drawable.ic_account_circle),
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface
+                            tint = Color.DarkGray
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                "Wallet Security & Profile",
+                                "View Profile",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 15.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = Color.DarkGray
                             )
                             Text(
-                                "Manage credentials and limits",
+                                "Manage account & security",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
@@ -936,7 +717,7 @@ fun WalletQuickActionsDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = Color.Gray)
+                Text("Close", color = PrimaryBlue, fontWeight = FontWeight.Bold)
             }
         }
     )
@@ -949,93 +730,57 @@ fun AllTransactionsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Transaction Ledger", fontWeight = FontWeight.Bold)
-                Text("${transactions.size} Total", fontSize = 12.sp, color = Color.Gray)
-            }
-        },
+        title = { Text("All Transactions", fontWeight = FontWeight.Bold) },
         text = {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 400.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .height(400.dp)
             ) {
                 if (transactions.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No transaction history available.", color = Color.Gray)
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No transactions found", color = Color.Gray)
                     }
                 } else {
-                    transactions.forEach { tx ->
-                        TransactionItem(transaction = tx)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(transactions) { tx ->
+                            TransactionItem(transaction = tx)
+                        }
                     }
                 }
             }
         },
         confirmButton = {
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text("Close")
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = PrimaryBlue, fontWeight = FontWeight.Bold)
             }
         }
     )
 }
 
 @Composable
-fun DiscoverVendorsBanner(onClick: () -> Unit) {
-    com.example.wellme.theme.NeumorphicCard(
-        modifier = Modifier.fillMaxWidth(),
-        backgroundColor = MaterialTheme.colorScheme.primary,
-        cornerRadius = 20.dp,
-        elevation = 6.dp,
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Discover Vendors",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-                Text(
-                    text = "Browse local food stalls and get instant discounts.",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 13.sp
-                )
+fun AuthRequiredDialog(
+    onDismiss: () -> Unit,
+    onSignIn: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Authentication Required", fontWeight = FontWeight.Bold) },
+        text = { Text("Please sign in or create an account to access student wallet deposits and payments.") },
+        confirmButton = {
+            Button(onClick = onSignIn, colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)) {
+                Text("Sign In", fontWeight = FontWeight.Bold)
             }
-            Surface(
-                modifier = Modifier.size(44.dp),
-                shape = CircleShape,
-                color = Color.White.copy(alpha = 0.2f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_store),
-                        contentDescription = null,
-                        tint = Color.White
-                    )
-                }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color.Gray)
             }
         }
-    }
+    )
 }
 
 @Preview(showBackground = true)
@@ -1056,8 +801,6 @@ fun StudentScreenPreview() {
                 campusEmail = "darwin@campus.com",
                 phoneNumber = "254712345678"
             ),
-            onScan = { _, _ -> },
-            onResetScanner = {},
             onDeposit = { _, _ -> },
             onRefresh = {}
         )
