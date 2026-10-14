@@ -201,6 +201,7 @@ class StudentViewModel @Inject constructor(
                 .collect { pending ->
                     Log.d(TAG, "Observed pending payment status: ${pending.status}")
                     if (pending.status.equals("SUCCESS", ignoreCase = true)) {
+                        clearTopUpIdempotencyKey()
                         _sheetState.value = SheetState.Success(
                             Transaction(
                                 transactionId = pending.checkoutRequestId,
@@ -215,6 +216,7 @@ class StudentViewModel @Inject constructor(
                         )
                         refreshWallet()
                     } else if (pending.status.equals("FAILED", ignoreCase = true)) {
+                        clearTopUpIdempotencyKey()
                         _sheetState.value =
                             SheetState.Error("M-Pesa payment failed or was cancelled.")
                     }
@@ -222,53 +224,99 @@ class StudentViewModel @Inject constructor(
         }
     }
 
-    private var currentTopUpIdempotencyKey: String? = null
+    private data class TopUpKeyContext(
+        val amountInCents: Long,
+        val phoneNumber: String,
+        val key: String
+    )
+
+    private var currentTopUpKeyContext: TopUpKeyContext? = null
+
+    private fun getTopUpIdempotencyKey(amountInCents: Long, phoneNumber: String): String {
+        val current = currentTopUpKeyContext
+        if (current?.amountInCents == amountInCents &&
+            current.phoneNumber == phoneNumber
+        ) {
+            return current.key // Same deposit retry
+        }
+
+        val newKey = java.util.UUID.randomUUID().toString()
+        currentTopUpKeyContext = TopUpKeyContext(amountInCents, phoneNumber, newKey)
+        return newKey
+    }
+
+    private fun clearTopUpIdempotencyKey() {
+        currentTopUpKeyContext = null
+    }
+
+    private fun normalizeKenyanPhone(input: String): String? {
+        val digits = input.filter(Char::isDigit)
+
+        val normalized = when {
+            digits.length == 10 && digits.startsWith("0") ->
+                "254${digits.drop(1)}"
+            digits.length == 9 && (digits.startsWith("7") || digits.startsWith("1")) ->
+                "254$digits"
+            else -> digits
+        }
+
+        return normalized.takeIf { Regex("^254[17][0-9]{8}$").matches(it) }
+    }
 
     fun initiateDeposit(amountInKsh: Double, phoneNumber: String) {
-        val amountBigDecimal = BigDecimal.valueOf(amountInKsh).setScale(2, RoundingMode.HALF_UP)
-        val amountInCents = amountBigDecimal.multiply(BigDecimal("100")).longValueExact()
+        val amountInCents = try {
+            BigDecimal.valueOf(amountInKsh)
+                .setScale(2, RoundingMode.HALF_UP)
+                .multiply(BigDecimal("100"))
+                .longValueExact()
+        } catch (_: Exception) {
+            _sheetState.value = SheetState.Error("Enter a valid deposit amount.")
+            return
+        }
 
-        // 2. Validate: Minimum 1 KES (100 cents) and whole KES amount in cents
         if (amountInCents < 100 || amountInCents % 100 != 0L) {
             _sheetState.value =
-                SheetState.Error("amount_in_cents must be at least 100 and a whole KES amount in cents")
+                SheetState.Error("Deposit must be at least 1 KES and a whole KES amount.")
             return
         }
 
-        if (phoneNumber.isBlank() || phoneNumber.length < 10) {
-            _sheetState.value = SheetState.Error("Please enter a valid phone number.")
+        val normalizedPhone = normalizeKenyanPhone(phoneNumber)
+        if (normalizedPhone == null) {
+            _sheetState.value = SheetState.Error("Please enter a valid Kenyan mobile number.")
             return
         }
 
-        val idempotencyKey = currentTopUpIdempotencyKey
-            ?: java.util.UUID.randomUUID().toString().also { currentTopUpIdempotencyKey = it }
+        val idempotencyKey =
+            getTopUpIdempotencyKey(amountInCents, normalizedPhone)
 
         viewModelScope.launch {
             _sheetState.value = SheetState.Processing
             try {
                 Log.d(TAG, "Initiating deposit for amount: $amountInCents")
-                val result =
-                    walletRepository.initiateWalletTopUp(amountInCents, phoneNumber, idempotencyKey)
+
+                val result = walletRepository.initiateWalletTopUp(
+                    amountInCents,
+                    normalizedPhone,
+                    idempotencyKey
+                )
+
                 if (result.isSuccess) {
                     val paymentAttemptId = result.getOrNull() ?: idempotencyKey
-                    Log.d(
-                        TAG,
-                        "Wallet top-up initiated successfully. Payment attempt ID: $paymentAttemptId"
-                    )
+
                     _sheetState.value = SheetState.Pending(
                         paymentAttemptId,
-                        "STK Push prompt sent to $phoneNumber. Please approve on your phone."
+                        "STK Push prompt sent to +$normalizedPhone. Please approve on your phone."
                     )
                     observePendingCheckout(paymentAttemptId)
                 } else {
-                    val exception =
-                        result.exceptionOrNull() ?: Exception("Unknown error initiating top-up")
+                    val exception = result.exceptionOrNull()
+                        ?: Exception("Unknown error initiating top-up")
+
                     Log.e(TAG, "Wallet top-up initiation failed", exception)
                     _sheetState.value =
                         SheetState.Error(ErrorMapper.getUserFriendlyMessage(exception))
                 }
             } catch (e: Throwable) {
-                Log.d(TAG, "Amount in Cents $amountInCents")
                 Log.e(TAG, "Unexpected error in initiateDeposit", e)
                 _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(e))
             }
@@ -287,6 +335,7 @@ class StudentViewModel @Inject constructor(
     fun resetScanner() {
         Log.d(TAG, "resetScanner")
         pendingJob?.cancel()
+        clearTopUpIdempotencyKey()
         _sheetState.value = SheetState.Idle
     }
 

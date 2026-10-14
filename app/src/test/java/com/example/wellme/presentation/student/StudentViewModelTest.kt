@@ -87,7 +87,7 @@ class StudentViewModelTest {
         viewModel.initiateDeposit(0.5, "254712345678")
         val state = viewModel.sheetState.value
         assertTrue(state is SheetState.Error)
-        assertEquals("amount_in_cents must be at least 100 and a whole KES amount in cents", (state as SheetState.Error).message)
+        assertEquals("Deposit must be at least 1 KES and a whole KES amount.", (state as SheetState.Error).message)
     }
 
     @Test
@@ -95,14 +95,22 @@ class StudentViewModelTest {
         viewModel.initiateDeposit(10.5, "254712345678")
         val state = viewModel.sheetState.value
         assertTrue(state is SheetState.Error)
-        assertEquals("amount_in_cents must be at least 100 and a whole KES amount in cents", (state as SheetState.Error).message)
+        assertEquals("Deposit must be at least 1 KES and a whole KES amount.", (state as SheetState.Error).message)
+    }
+
+    @Test
+    fun `initiateDeposit with invalid phone number sets Error state`() = runTest {
+        viewModel.initiateDeposit(100.0, "12345")
+        val state = viewModel.sheetState.value
+        assertTrue(state is SheetState.Error)
+        assertEquals("Please enter a valid Kenyan mobile number.", (state as SheetState.Error).message)
     }
 
     @Test
     fun `initiateDeposit with valid amount invokes repository`() = runTest {
         whenever(walletRepository.initiateWalletTopUp(any(), any(), any())).doReturn(Result.success("attempt_123"))
 
-        viewModel.initiateDeposit(100.0, "254712345678")
+        viewModel.initiateDeposit(100.0, "0712345678")
 
         val state = viewModel.sheetState.value
         assertTrue(state is SheetState.Pending)
