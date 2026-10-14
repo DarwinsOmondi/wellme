@@ -38,26 +38,6 @@ android {
         )
         buildConfigField(
             "String",
-            "MPESA_CONSUMER_KEY",
-            "\"${localProperties.getProperty("mpesa.consumer.key") ?: ""}\""
-        )
-        buildConfigField(
-            "String",
-            "MPESA_CONSUMER_SECRET",
-            "\"${localProperties.getProperty("mpesa.consumer.secret") ?: ""}\""
-        )
-        buildConfigField(
-            "String",
-            "MPESA_PASSKEY",
-            "\"${localProperties.getProperty("mpesa.passkey") ?: ""}\""
-        )
-        buildConfigField(
-            "String",
-            "MPESA_CALLBACK_URL",
-            "\"${localProperties.getProperty("mpesa.callback.url") ?: ""}\""
-        )
-        buildConfigField(
-            "String",
             "CODESKOP_KEY",
             "\"${localProperties.getProperty("codeskop.project.key") ?: ""}\""
         )
@@ -156,6 +136,7 @@ dependencies {
     implementation(libs.supabase.auth)
     implementation(libs.supabase.storage)
     implementation(libs.supabase.realtime)
+    implementation("io.github.jan-tennert.supabase:functions-kt")
     implementation(libs.supabase.compose.auth)
     implementation(libs.coil.compose)
     implementation(libs.ktor.client.android)

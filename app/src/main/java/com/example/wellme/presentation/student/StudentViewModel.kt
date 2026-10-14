@@ -3,7 +3,6 @@ package com.example.wellme.presentation.student
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.wellme.BuildConfig
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.model.StudentWallet
 import com.example.wellme.domain.model.PendingPayment
@@ -13,7 +12,6 @@ import com.example.wellme.domain.repository.AuthRepository
 import com.example.wellme.domain.repository.KycRepository
 import com.example.wellme.domain.repository.MerchantRepository
 import com.example.wellme.domain.repository.WalletRepository
-import com.example.wellme.domain.usecase.InitiateStkPushUseCase
 import com.example.wellme.domain.usecase.ProcessPaymentUseCase
 import com.example.wellme.util.ErrorMapper
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,8 +46,7 @@ class StudentViewModel @Inject constructor(
     private val merchantRepository: MerchantRepository,
     private val authRepository: AuthRepository,
     private val kycRepository: KycRepository,
-    private val processPaymentUseCase: ProcessPaymentUseCase,
-    private val initiateStkPushUseCase: InitiateStkPushUseCase
+    private val processPaymentUseCase: ProcessPaymentUseCase
 ) : ViewModel() {
 
     private val TAG = "StudentViewModel"
@@ -148,13 +145,23 @@ class StudentViewModel @Inject constructor(
         viewModelScope.launch {
             _sheetState.value = SheetState.Processing
             try {
-                val transaction = processPaymentUseCase(
+                val checkoutResult = processPaymentUseCase(
                     studentId = studentId,
                     merchantId = currentState.merchant.merchantId,
                     originalAmountInCents = currentState.originalAmountInCents
                 )
-                Log.d(TAG, "Payment successful. Syncing wallet...")
-                refreshWallet() // Ensure UI shows the deduction
+                Log.d(TAG, "Payment successful. Order ID: ${checkoutResult.orderId}. Syncing wallet...")
+                refreshWallet()
+                val transaction = Transaction(
+                    transactionId = checkoutResult.orderId,
+                    amountInCents = checkoutResult.totalInCents,
+                    originalAmountInCents = checkoutResult.subtotalInCents,
+                    discountAppliedInCents = checkoutResult.discountInCents,
+                    timestamp = System.currentTimeMillis(),
+                    type = TransactionType.PAYMENT,
+                    merchantId = currentState.merchant.merchantId,
+                    studentId = studentId
+                )
                 _sheetState.value = SheetState.Success(transaction)
             } catch (e: Exception) {
                 Log.e(TAG, "Payment failed", e)
@@ -192,58 +199,37 @@ class StudentViewModel @Inject constructor(
         }
     }
 
+    private var currentTopUpIdempotencyKey: String? = null
+
     fun initiateDeposit(amountInKsh: Double, phoneNumber: String) {
-        val amountInCents = (amountInKsh * 100).toLong()
-        Log.d(TAG, "initiateDeposit: $amountInKsh KSh to $phoneNumber")
-        if (amountInKsh <= 0) {
-            _sheetState.value = SheetState.Error("Please enter an amount greater than 0.")
+        val amountInCents = (amountInKsh * 100).roundToLong()
+        if (amountInCents < 100 || amountInCents % 100 != 0L) {
+            _sheetState.value = SheetState.Error("amount_in_cents must be at least 100 and a whole KES amount in cents")
             return
         }
-        if (phoneNumber.length < 10) {
+        if (phoneNumber.isBlank() || phoneNumber.length < 10) {
             _sheetState.value = SheetState.Error("Please enter a valid phone number.")
             return
         }
 
+        val idempotencyKey = currentTopUpIdempotencyKey ?: java.util.UUID.randomUUID().toString().also { currentTopUpIdempotencyKey = it }
+
         viewModelScope.launch {
             _sheetState.value = SheetState.Processing
             try {
-                val result = initiateStkPushUseCase(
-                    consumerKey = com.example.wellme.BuildConfig.MPESA_CONSUMER_KEY,
-                    consumerSecret = com.example.wellme.BuildConfig.MPESA_CONSUMER_SECRET,
-                    businessShortCode = "174379",
-                    passkey = com.example.wellme.BuildConfig.MPESA_PASSKEY,
-                    amount = amountInKsh.toInt().toString(),
-                    phoneNumber = phoneNumber,
-                    callbackUrl = com.example.wellme.BuildConfig.MPESA_CALLBACK_URL,
-                    accountReference = "WellMe Deposit",
-                    transactionDesc = "Student Wallet Deposit"
-                )
-
-                result.onSuccess { response ->
-                    val reqId = response.checkoutRequestId ?: "req_${System.currentTimeMillis()}"
-                    Log.d(TAG, "STK Push request successful. CheckoutRequestId: $reqId")
-                    try {
-                        val pendingPayment = PendingPayment(
-                            checkoutRequestId = reqId,
-                            studentId = studentId,
-                            amountInCents = amountInCents,
-                            status = "PENDING",
-                            timestamp = System.currentTimeMillis()
-                        )
-                        walletRepository.logPendingPayment(pendingPayment)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to log pending payment", e)
-                    }
-
+                val result = walletRepository.initiateWalletTopUp(amountInCents, phoneNumber, idempotencyKey)
+                if (result.isSuccess) {
+                    val paymentAttemptId = result.getOrNull() ?: idempotencyKey
+                    Log.d(TAG, "Wallet top-up initiated successfully. Payment attempt ID: $paymentAttemptId")
                     _sheetState.value = SheetState.Pending(
-                        reqId,
-                        "STK Push prompt sent to $phoneNumber. Please enter your M-Pesa PIN on your phone."
+                        paymentAttemptId,
+                        "STK Push prompt sent to $phoneNumber. Please approve on your phone."
                     )
-                    observePendingCheckout(reqId)
-                    refreshWallet()
-                }.onFailure {
-                    Log.e(TAG, "Failed to initiate M-Pesa STK Push", it)
-                    _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(it))
+                    observePendingCheckout(paymentAttemptId)
+                } else {
+                    val exception = result.exceptionOrNull() ?: Exception("Unknown error initiating top-up")
+                    Log.e(TAG, "Wallet top-up initiation failed", exception)
+                    _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(exception))
                 }
             } catch (e: Throwable) {
                 Log.e(TAG, "Unexpected error in initiateDeposit", e)

@@ -45,7 +45,7 @@ object ErrorMapper {
                         "Please verify your email address first."
                     message.contains("network", ignoreCase = true) -> 
                         "Connection lost. Please try again."
-                    else -> "An unexpected error occurred. Please try again."
+                    else -> message
                 }
             }
         }

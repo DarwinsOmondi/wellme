@@ -7,6 +7,8 @@ import com.example.wellme.domain.repository.MerchantInventoryRepository
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,9 +20,8 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
     private val TAG = "MerchantInventoryRepo"
 
     override fun getInventory(merchantId: String): Flow<List<MerchantItem>> = flow {
-        Log.d(TAG, "Fetching real-time inventory from items table for merchant: $merchantId")
+        Log.d(TAG, "Fetching inventory from items table for merchant: $merchantId")
         try {
-            // Safe query avoiding UUID operator type mismatch errors (uuid vs ilike)
             val dtos = try {
                 postgrest["items"]
                     .select {
@@ -37,9 +38,7 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
                     .filter { it.merchantId.equals(merchantId, ignoreCase = true) }
             }
 
-            // Fallback: If still empty, query all items to ensure items inserted are visible
             val finalDtos = if (dtos.isEmpty()) {
-                Log.d(TAG, "Merchant-specific query returned 0 items, querying all items table")
                 postgrest["items"]
                     .select()
                     .decodeList<MerchantItemDto>()
@@ -48,7 +47,6 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
             }
 
             val items = finalDtos.map { it.toDomain() }
-            Log.d(TAG, "Successfully retrieved ${items.size} real items from Supabase items table for $merchantId")
             emit(items)
         } catch (e: Exception) {
             Log.e(TAG, "Error fetching items from Supabase items table for merchant $merchantId", e)
@@ -56,31 +54,55 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    override suspend fun upsertItem(item: MerchantItem): Result<Unit> = try {
-        Log.d(TAG, "Upserting item '${item.name}' for merchant '${item.merchantId}' into items table")
-        postgrest["items"].upsert(MerchantItemDto.fromDomain(item))
-        Log.d(TAG, "Item '${item.name}' successfully inserted into items table")
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Log.e(TAG, "Error upserting item '${item.name}' into items table", e)
-        Result.failure(e)
-    }
-
-    override suspend fun deleteItem(itemId: String): Result<Unit> = try {
-        postgrest["items"].delete { filter { eq("id", itemId) } }
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Log.e(TAG, "Error deleting item", e)
-        Result.failure(e)
-    }
-
-    override suspend fun updateStock(itemId: String, newStock: Int): Result<Unit> = try {
-        postgrest["items"].update(mapOf("stock_units" to newStock)) {
-            filter { eq("id", itemId) }
+    override suspend fun upsertItem(item: MerchantItem): Result<String> {
+        return try {
+            val itemId = postgrest.rpc(
+                function = "merchant_upsert_item",
+                parameters = kotlinx.serialization.json.buildJsonObject {
+                    put("p_item_id", if (item.id.isBlank() || item.id == "0") null else item.id)
+                    put("p_name", item.name)
+                    put("p_price_kes", item.price)
+                    put("p_stock_units", item.stockUnits)
+                    put("p_category", item.category)
+                    put("p_description", item.description)
+                    put("p_image_url", item.imageUrl)
+                }
+            ).decodeAs<String>()
+            Result.success(itemId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in merchant_upsert_item RPC", e)
+            Result.failure(e)
         }
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Log.e(TAG, "Error updating stock", e)
-        Result.failure(e)
+    }
+
+    override suspend fun deleteItem(itemId: String): Result<Boolean> {
+        return try {
+            val deleted = postgrest.rpc(
+                function = "merchant_delete_item",
+                parameters = kotlinx.serialization.json.buildJsonObject {
+                    put("p_item_id", itemId)
+                }
+            ).decodeAs<Boolean>()
+            Result.success(deleted)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in merchant_delete_item RPC", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateStock(itemId: String, newStock: Int): Result<Int> {
+        return try {
+            val stock = postgrest.rpc(
+                function = "merchant_update_item_stock",
+                parameters = kotlinx.serialization.json.buildJsonObject {
+                    put("p_item_id", itemId)
+                    put("p_stock_units", newStock)
+                }
+            ).decodeAs<Int>()
+            Result.success(stock)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in merchant_update_item_stock RPC", e)
+            Result.failure(e)
+        }
     }
 }

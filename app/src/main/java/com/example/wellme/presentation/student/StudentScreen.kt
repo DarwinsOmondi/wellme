@@ -790,7 +790,7 @@ fun StudentScreenPreview() {
         StudentContent(
             wallet = StudentWallet(
                 studentId = "student_123",
-                balanceInCents = 245000L
+                balanceInCents = 240000L
             ),
             transactions = emptyList(),
             sheetState = SheetState.Idle,

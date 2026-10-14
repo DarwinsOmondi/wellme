@@ -6,7 +6,6 @@ import com.example.wellme.domain.repository.AuthRepository
 import com.example.wellme.domain.repository.KycRepository
 import com.example.wellme.domain.repository.MerchantRepository
 import com.example.wellme.domain.repository.WalletRepository
-import com.example.wellme.domain.usecase.InitiateStkPushUseCase
 import com.example.wellme.domain.usecase.ProcessPaymentUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,7 +35,6 @@ class StudentViewModelTest {
     private val authRepository: AuthRepository = mock()
     private val kycRepository: KycRepository = mock()
     private val processPaymentUseCase: ProcessPaymentUseCase = mock()
-    private val initiateStkPushUseCase: InitiateStkPushUseCase = mock()
 
     @Before
     fun setup() = runBlocking {
@@ -44,6 +42,7 @@ class StudentViewModelTest {
         
         whenever(walletRepository.getWallet(any(), any())).doReturn(flowOf(null))
         whenever(walletRepository.getTransactions()).doReturn(flowOf(emptyList()))
+        whenever(walletRepository.observePendingPayment(any())).doReturn(flowOf())
         whenever(kycRepository.getStudentKyc(any())).doReturn(Result.success(null))
         
         viewModel = StudentViewModel(
@@ -51,8 +50,7 @@ class StudentViewModelTest {
             merchantRepository = merchantRepository,
             authRepository = authRepository,
             kycRepository = kycRepository,
-            processPaymentUseCase = processPaymentUseCase,
-            initiateStkPushUseCase = initiateStkPushUseCase
+            processPaymentUseCase = processPaymentUseCase
         )
     }
 
@@ -82,5 +80,32 @@ class StudentViewModelTest {
         viewModel.scanMerchant(merchantId, 1000L)
         
         assertTrue(viewModel.sheetState.value is SheetState.Error)
+    }
+
+    @Test
+    fun `initiateDeposit with amount less than 100 cents sets Error state`() = runTest {
+        viewModel.initiateDeposit(0.5, "254712345678")
+        val state = viewModel.sheetState.value
+        assertTrue(state is SheetState.Error)
+        assertEquals("amount_in_cents must be at least 100 and a whole KES amount in cents", (state as SheetState.Error).message)
+    }
+
+    @Test
+    fun `initiateDeposit with non-whole KES amount sets Error state`() = runTest {
+        viewModel.initiateDeposit(10.5, "254712345678")
+        val state = viewModel.sheetState.value
+        assertTrue(state is SheetState.Error)
+        assertEquals("amount_in_cents must be at least 100 and a whole KES amount in cents", (state as SheetState.Error).message)
+    }
+
+    @Test
+    fun `initiateDeposit with valid amount invokes repository`() = runTest {
+        whenever(walletRepository.initiateWalletTopUp(any(), any(), any())).doReturn(Result.success("attempt_123"))
+
+        viewModel.initiateDeposit(100.0, "254712345678")
+
+        val state = viewModel.sheetState.value
+        assertTrue(state is SheetState.Pending)
+        assertEquals("attempt_123", (state as SheetState.Pending).checkoutRequestId)
     }
 }

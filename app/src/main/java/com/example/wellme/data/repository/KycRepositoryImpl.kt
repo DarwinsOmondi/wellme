@@ -35,7 +35,6 @@ class KycRepositoryImpl @Inject constructor(
         Log.d(TAG, "Starting student KYC upload for userId: $userId")
         
         return try {
-            // 1. Upload to Storage
             val path = "$userId/student_id.$idPhotoExtension"
             Log.d(TAG, "Uploading student ID photo to: $path")
             val bucket = storage.from("student-docs")
@@ -43,11 +42,9 @@ class KycRepositoryImpl @Inject constructor(
                 upsert = true
             }
             
-            // 2. Get Public URL (or just save path)
             val publicUrl = bucket.publicUrl(path)
             Log.d(TAG, "Student ID photo uploaded. Public URL: $publicUrl")
 
-            // 3. Save to database
             val kyc = StudentKyc(
                 id = userId,
                 studentIdNumber = studentIdNumber,
@@ -58,18 +55,8 @@ class KycRepositoryImpl @Inject constructor(
             )
             Log.d(TAG, "Inserting student KYC record into database")
             postgrest.from("student_kyc").insert(kyc)
-
-            // 4. Initialize Student Wallet
-            Log.d(TAG, "Initializing student wallet for: $userId")
-            postgrest.from("student_wallets").insert(
-                buildJsonObject {
-                    put("student_id", userId)
-                    put("balance_in_cents", 0)
-                    put("status", "ACTIVE")
-                }
-            )
             
-            Log.d(TAG, "Student KYC and Wallet setup successful for: $userId")
+            Log.d(TAG, "Student KYC setup successful for: $userId")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Student KYC upload failed for: $userId", e)
@@ -134,21 +121,8 @@ class KycRepositoryImpl @Inject constructor(
             
             Log.d(TAG, "Inserting merchant KYC record into database")
             postgrest.from("merchant_kyc").insert(kyc)
-
-            // 4. Initialize Merchant Profile
-            Log.d(TAG, "Initializing merchant profile for: $userId")
-            postgrest.from("merchants").insert(
-                buildJsonObject {
-                    put("merchant_id", userId)
-                    put("business_name", businessName)
-                    put("discount_tier", 0.15)
-                    put("pool_target_in_cents", 0)
-                    put("pool_raised_in_cents", 0)
-                    put("is_verified", false)
-                }
-            )
             
-            Log.d(TAG, "Merchant KYC and Profile setup successful for: $userId")
+            Log.d(TAG, "Merchant KYC setup successful for: $userId")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Merchant KYC upload failed for: $userId", e)
@@ -197,7 +171,6 @@ class KycRepositoryImpl @Inject constructor(
             val publicUrl = bucket.publicUrl(path)
             Log.d(TAG, "Avatar uploaded to storage. URL: $publicUrl")
 
-            // Update database - check which KYC exists
             val studentKyc = getStudentKyc(userId).getOrNull()
             if (studentKyc != null) {
                 postgrest.from("student_kyc").update({
@@ -246,11 +219,6 @@ class KycRepositoryImpl @Inject constructor(
                 set("business_name", businessName)
             }) {
                 filter { eq("id", userId) }
-            }
-            postgrest.from("merchants").update({
-                set("business_name", businessName)
-            }) {
-                filter { eq("merchant_id", userId) }
             }
             Result.success(Unit)
         } catch (e: Exception) {

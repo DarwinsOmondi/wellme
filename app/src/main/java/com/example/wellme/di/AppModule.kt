@@ -70,9 +70,9 @@ object UsecaseModule {
     @Singleton
     fun provideProcessPaymentUseCase(
         walletRepository: WalletRepository,
-        merchantRepository: MerchantRepository
+        inventoryRepository: MerchantInventoryRepository
     ): ProcessPaymentUseCase {
-        return ProcessPaymentUseCase(walletRepository, merchantRepository)
+        return ProcessPaymentUseCase(walletRepository, inventoryRepository)
     }
 
     @Provides

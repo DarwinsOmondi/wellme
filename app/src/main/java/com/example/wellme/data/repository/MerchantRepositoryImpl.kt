@@ -51,11 +51,8 @@ class MerchantRepositoryImpl @Inject constructor(
                 }
                 .decodeSingleOrNull<MerchantDto>()
             
-            Log.d(TAG, "Remote merchant fetch result for $merchantId: ${dto?.businessName ?: "Not found"}")
-            
             dto?.let {
                 merchantDao.insertMerchant(MerchantEntity.fromDomain(it.toDomain()))
-                Log.d(TAG, "Local merchant data updated for $merchantId")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error refreshing merchant $merchantId", e)
@@ -67,7 +64,6 @@ class MerchantRepositoryImpl @Inject constructor(
         return merchantDao.getAllMerchantsFlow()
             .onStart { refreshAllMerchants() }
             .map { list ->
-                Log.d(TAG, "All merchants update emitted: ${list.size} items")
                 list.map { it.toDomain() }
             }
     }
@@ -79,7 +75,6 @@ class MerchantRepositoryImpl @Inject constructor(
                 .select(columns = Columns.ALL)
                 .decodeList<MerchantDto>()
             
-            Log.d(TAG, "Remote merchants fetch result: ${dtos.size} items")
             dtos.forEach { dto ->
                 merchantDao.insertMerchant(MerchantEntity.fromDomain(dto.toDomain()))
             }
@@ -89,14 +84,11 @@ class MerchantRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertMerchant(merchant: MerchantProfile) {
-        Log.d(TAG, "Inserting/Upserting merchant: ${merchant.merchantId}")
+        Log.d(TAG, "Inserting merchant locally: ${merchant.merchantId}")
         try {
-            postgrest["merchants"].upsert(MerchantDto.fromDomain(merchant))
-            Log.d(TAG, "Remote merchant upsert successful")
             merchantDao.insertMerchant(MerchantEntity.fromDomain(merchant))
-            Log.d(TAG, "Local merchant insert successful")
         } catch (e: Exception) {
-            Log.e(TAG, "Error inserting merchant", e)
+            Log.e(TAG, "Error inserting merchant locally", e)
         }
     }
 
@@ -109,11 +101,9 @@ class MerchantRepositoryImpl @Inject constructor(
         Log.d(TAG, "getMerchantTransactions flow requested for: $merchantId")
         return transactionDao.getMerchantTransactionsFlow(merchantId)
             .onStart { 
-                Log.d(TAG, "Refreshing transactions for merchant: $merchantId")
                 refreshTransactions(merchantId) 
             }
             .map { list ->
-                Log.d(TAG, "Merchant transactions update emitted: ${list.size} items")
                 list.map { it.toDomain() }
             }
     }
@@ -129,12 +119,9 @@ class MerchantRepositoryImpl @Inject constructor(
                 }
                 .decodeList<TransactionDto>()
             
-            Log.d(TAG, "Remote transactions fetch result for $merchantId: ${dtos.size} items")
-            
             dtos.forEach { dto ->
                 transactionDao.insertTransaction(TransactionEntity.fromDomain(dto.toDomain()))
             }
-            Log.d(TAG, "Local transactions updated for merchant: $merchantId")
         } catch (e: Exception) {
             Log.e(TAG, "Error refreshing transactions for merchant $merchantId", e)
         }

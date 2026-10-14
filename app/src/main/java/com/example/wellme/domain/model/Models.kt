@@ -1,10 +1,29 @@
 package com.example.wellme.domain.model
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
 enum class TransactionType {
     PAYMENT,     // Wallet deduction for food
     STIPEND,     // Wallet addition of stipend
     FUNDING      // Merchant receiving direct cash
 }
+
+@Serializable
+data class CheckoutResult(
+    @SerialName("order_id") val orderId: String,
+    @SerialName("status") val status: String,
+    @SerialName("subtotal_in_cents") val subtotalInCents: Long,
+    @SerialName("discount_in_cents") val discountInCents: Long,
+    @SerialName("total_in_cents") val totalInCents: Long,
+    @SerialName("idempotent_replay") val idempotentReplay: Boolean = false
+)
+
+@Serializable
+data class CheckoutItem(
+    @SerialName("item_id") val itemId: String,
+    @SerialName("quantity") val quantity: Int
+)
 
 data class StudentWallet(
     val studentId: String,

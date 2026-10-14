@@ -1,5 +1,7 @@
 package com.example.wellme.domain.repository
 
+import com.example.wellme.domain.model.CheckoutItem
+import com.example.wellme.domain.model.CheckoutResult
 import com.example.wellme.domain.model.MerchantItem
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.model.PendingPayment
@@ -17,6 +19,10 @@ interface WalletRepository {
 
     suspend fun logPendingPayment(payment: PendingPayment)
     fun observePendingPayment(checkoutRequestId: String): Flow<PendingPayment>
+
+    suspend fun initiateWalletTopUp(amountInCents: Long, phoneNumber: String, idempotencyKey: String): Result<String>
+    suspend fun checkoutWithWallet(items: List<CheckoutItem>, idempotencyKey: String): Result<CheckoutResult>
+    suspend fun getPaymentAttemptStatus(paymentAttemptId: String): Result<String>
 }
 
 interface MerchantRepository {
@@ -29,7 +35,7 @@ interface MerchantRepository {
 
 interface MerchantInventoryRepository {
     fun getInventory(merchantId: String): Flow<List<MerchantItem>>
-    suspend fun upsertItem(item: MerchantItem): Result<Unit>
-    suspend fun deleteItem(itemId: String): Result<Unit>
-    suspend fun updateStock(itemId: String, newStock: Int): Result<Unit>
+    suspend fun upsertItem(item: MerchantItem): Result<String>
+    suspend fun deleteItem(itemId: String): Result<Boolean>
+    suspend fun updateStock(itemId: String, newStock: Int): Result<Int>
 }

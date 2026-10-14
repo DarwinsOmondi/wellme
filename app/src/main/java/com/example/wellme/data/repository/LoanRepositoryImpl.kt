@@ -26,21 +26,16 @@ class LoanRepositoryImpl @Inject constructor(
 
     override suspend fun requestLoan(merchantId: String, amountInCents: Long, discountPercentage: Double): Result<String> {
         return try {
-            val response = postgrest.rpc(
-                function = "request_till_b2c_loan",
+            val loanId = postgrest.rpc(
+                function = "request_merchant_loan",
                 parameters = buildJsonObject {
                     put("p_merchant_id", merchantId)
-                    put("p_business_name", "Vendor $merchantId")
                     put("p_amount_requested_in_cents", amountInCents)
-                    put("p_discount_percentage", discountPercentage * 100)
-                    put("p_till_number", "174379")
                 }
-            )
-            val resultData = response.data
-            Log.d(TAG, "request_till_b2c_loan response: $resultData")
-            Result.success(resultData)
+            ).decodeAs<String>()
+            Result.success(loanId)
         } catch (e: Exception) {
-            Log.e(TAG, "request_till_b2c_loan failed", e)
+            Log.e(TAG, "Failed to request merchant loan via RPC", e)
             Result.failure(e)
         }
     }
@@ -73,20 +68,7 @@ class LoanRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markLoanAsDisbursed(merchantId: String): Result<Unit> {
-        return try {
-            postgrest.from("disbursed_merchant_loans")
-                .update(mapOf("status" to "DISBURSED")) {
-                    filter {
-                        eq("merchant_id", merchantId)
-                        eq("status", "PENDING")
-                    }
-                }
-            Log.d(TAG, "Marked merchant $merchantId loans as DISBURSED")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to mark loan as disbursed", e)
-            Result.failure(e)
-        }
+        return Result.failure(Exception("Loan status updates are restricted to backend handlers."))
     }
 
     override fun observeLoanLifecycle(loanId: String): Flow<MerchantLoanDto> {
@@ -103,7 +85,7 @@ class LoanRepositoryImpl @Inject constructor(
                         id = loanId,
                         merchantId = "",
                         amountRequestedInCents = 0L,
-                        status = "DISBURSED",
+                        status = "PENDING",
                         conversationId = "REQ-$loanId",
                         createdAt = System.currentTimeMillis().toString()
                     )
@@ -115,7 +97,7 @@ class LoanRepositoryImpl @Inject constructor(
                     id = loanId,
                     merchantId = "",
                     amountRequestedInCents = 0L,
-                    status = "DISBURSED",
+                    status = "PENDING",
                     conversationId = "REQ-$loanId",
                     createdAt = System.currentTimeMillis().toString()
                 )
