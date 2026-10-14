@@ -18,12 +18,20 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.math.BigDecimal
+import java.math.RoundingMode
 import javax.inject.Inject
 import kotlin.math.roundToLong
 
 sealed interface SheetState {
     object Idle : SheetState
-    data class Scanned(val merchant: MerchantProfile, val originalAmountInCents: Long, val discountAppliedInCents: Long, val netAmountInCents: Long) : SheetState
+    data class Scanned(
+        val merchant: MerchantProfile,
+        val originalAmountInCents: Long,
+        val discountAppliedInCents: Long,
+        val netAmountInCents: Long
+    ) : SheetState
+
     object Processing : SheetState
     data class Pending(val checkoutRequestId: String, val message: String) : SheetState
     data class Success(val transaction: Transaction) : SheetState
@@ -56,11 +64,12 @@ class StudentViewModel @Inject constructor(
     private val _refreshTrigger = MutableStateFlow(0)
     private val _observeRealtime = MutableStateFlow(false)
 
-    val wallet: StateFlow<StudentWallet?> = combine(_refreshTrigger, _observeRealtime) { _, observe -> observe }
-        .flatMapLatest { observe ->
-            walletRepository.getWallet(studentId, observe)
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val wallet: StateFlow<StudentWallet?> =
+        combine(_refreshTrigger, _observeRealtime) { _, observe -> observe }
+            .flatMapLatest { observe ->
+                walletRepository.getWallet(studentId, observe)
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val transactions: StateFlow<List<Transaction>> = walletRepository.getTransactions()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -88,10 +97,13 @@ class StudentViewModel @Inject constructor(
             )
         )
     )
-    val merchantFundingRequests: StateFlow<List<MerchantFundingRequest>> = _merchantFundingRequests.asStateFlow()
+    val merchantFundingRequests: StateFlow<List<MerchantFundingRequest>> =
+        _merchantFundingRequests.asStateFlow()
 
-    private val _studentKyc = MutableStateFlow<com.example.wellme.data.remote.model.StudentKyc?>(null)
-    val studentKyc: StateFlow<com.example.wellme.data.remote.model.StudentKyc?> = _studentKyc.asStateFlow()
+    private val _studentKyc =
+        MutableStateFlow<com.example.wellme.data.remote.model.StudentKyc?>(null)
+    val studentKyc: StateFlow<com.example.wellme.data.remote.model.StudentKyc?> =
+        _studentKyc.asStateFlow()
 
     init {
         Log.d(TAG, "Initializing StudentViewModel for studentId: $studentId")
@@ -118,14 +130,18 @@ class StudentViewModel @Inject constructor(
             val merchant = merchantRepository.getMerchant(merchantId).firstOrNull()
             if (merchant == null) {
                 Log.e(TAG, "Merchant not found: $merchantId")
-                _sheetState.value = SheetState.Error("Vendor '$merchantId' not registered in WellMe ecosystem.")
+                _sheetState.value =
+                    SheetState.Error("Vendor '$merchantId' not registered in WellMe ecosystem.")
                 return@launch
             }
 
             val discountApplied = (originalAmountInCents * merchant.discountTier).roundToLong()
             val netAmount = originalAmountInCents - discountApplied
 
-            Log.d(TAG, "Merchant found: ${merchant.businessName}. Discount: $discountApplied, Net: $netAmount")
+            Log.d(
+                TAG,
+                "Merchant found: ${merchant.businessName}. Discount: $discountApplied, Net: $netAmount"
+            )
 
             _sheetState.value = SheetState.Scanned(
                 merchant = merchant,
@@ -140,7 +156,10 @@ class StudentViewModel @Inject constructor(
         val currentState = _sheetState.value
         if (currentState !is SheetState.Scanned) return
 
-        Log.d(TAG, "confirmPayment for merchant: ${currentState.merchant.merchantId}, amount: ${currentState.originalAmountInCents}")
+        Log.d(
+            TAG,
+            "confirmPayment for merchant: ${currentState.merchant.merchantId}, amount: ${currentState.originalAmountInCents}"
+        )
 
         viewModelScope.launch {
             _sheetState.value = SheetState.Processing
@@ -150,7 +169,10 @@ class StudentViewModel @Inject constructor(
                     merchantId = currentState.merchant.merchantId,
                     originalAmountInCents = currentState.originalAmountInCents
                 )
-                Log.d(TAG, "Payment successful. Order ID: ${checkoutResult.orderId}. Syncing wallet...")
+                Log.d(
+                    TAG,
+                    "Payment successful. Order ID: ${checkoutResult.orderId}. Syncing wallet..."
+                )
                 refreshWallet()
                 val transaction = Transaction(
                     transactionId = checkoutResult.orderId,
@@ -193,7 +215,8 @@ class StudentViewModel @Inject constructor(
                         )
                         refreshWallet()
                     } else if (pending.status.equals("FAILED", ignoreCase = true)) {
-                        _sheetState.value = SheetState.Error("M-Pesa payment failed or was cancelled.")
+                        _sheetState.value =
+                            SheetState.Error("M-Pesa payment failed or was cancelled.")
                     }
                 }
         }
@@ -202,43 +225,62 @@ class StudentViewModel @Inject constructor(
     private var currentTopUpIdempotencyKey: String? = null
 
     fun initiateDeposit(amountInKsh: Double, phoneNumber: String) {
-        val amountInCents = (amountInKsh * 100).roundToLong()
+        val amountBigDecimal = BigDecimal.valueOf(amountInKsh).setScale(2, RoundingMode.HALF_UP)
+        val amountInCents = amountBigDecimal.multiply(BigDecimal("100")).longValueExact()
+
+        // 2. Validate: Minimum 1 KES (100 cents) and whole KES amount in cents
         if (amountInCents < 100 || amountInCents % 100 != 0L) {
-            _sheetState.value = SheetState.Error("amount_in_cents must be at least 100 and a whole KES amount in cents")
+            _sheetState.value =
+                SheetState.Error("amount_in_cents must be at least 100 and a whole KES amount in cents")
             return
         }
+
         if (phoneNumber.isBlank() || phoneNumber.length < 10) {
             _sheetState.value = SheetState.Error("Please enter a valid phone number.")
             return
         }
 
-        val idempotencyKey = currentTopUpIdempotencyKey ?: java.util.UUID.randomUUID().toString().also { currentTopUpIdempotencyKey = it }
+        val idempotencyKey = currentTopUpIdempotencyKey
+            ?: java.util.UUID.randomUUID().toString().also { currentTopUpIdempotencyKey = it }
 
         viewModelScope.launch {
             _sheetState.value = SheetState.Processing
             try {
-                val result = walletRepository.initiateWalletTopUp(amountInCents, phoneNumber, idempotencyKey)
+                Log.d(TAG, "Initiating deposit for amount: $amountInCents")
+                val result =
+                    walletRepository.initiateWalletTopUp(amountInCents, phoneNumber, idempotencyKey)
                 if (result.isSuccess) {
                     val paymentAttemptId = result.getOrNull() ?: idempotencyKey
-                    Log.d(TAG, "Wallet top-up initiated successfully. Payment attempt ID: $paymentAttemptId")
+                    Log.d(
+                        TAG,
+                        "Wallet top-up initiated successfully. Payment attempt ID: $paymentAttemptId"
+                    )
                     _sheetState.value = SheetState.Pending(
                         paymentAttemptId,
                         "STK Push prompt sent to $phoneNumber. Please approve on your phone."
                     )
                     observePendingCheckout(paymentAttemptId)
                 } else {
-                    val exception = result.exceptionOrNull() ?: Exception("Unknown error initiating top-up")
+                    val exception =
+                        result.exceptionOrNull() ?: Exception("Unknown error initiating top-up")
                     Log.e(TAG, "Wallet top-up initiation failed", exception)
-                    _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(exception))
+                    _sheetState.value =
+                        SheetState.Error(ErrorMapper.getUserFriendlyMessage(exception))
                 }
             } catch (e: Throwable) {
+                Log.d(TAG, "Amount in Cents $amountInCents")
                 Log.e(TAG, "Unexpected error in initiateDeposit", e)
                 _sheetState.value = SheetState.Error(ErrorMapper.getUserFriendlyMessage(e))
             }
         }
     }
 
-    fun donateToMerchant(merchantName: String, tillNumber: String, amountInKsh: Double, phoneNumber: String) {
+    fun donateToMerchant(
+        merchantName: String,
+        tillNumber: String,
+        amountInKsh: Double,
+        phoneNumber: String
+    ) {
         initiateDeposit(amountInKsh, phoneNumber)
     }
 

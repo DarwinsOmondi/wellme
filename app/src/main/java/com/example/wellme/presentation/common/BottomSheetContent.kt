@@ -23,6 +23,7 @@ import com.example.wellme.R
 import com.example.wellme.presentation.student.SheetState
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.WellMeTheme
+import com.example.wellme.util.ErrorMapper
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -65,13 +66,19 @@ fun BottomSheetContent(
                         color = Color(0xFF1D1B20)
                     )
                     Text(
-                        text = "Please check your phone and enter your M-Pesa PIN to complete the transaction.",
+                        text = if (state is SheetState.Pending) state.message else "Please check your phone and enter your M-Pesa PIN to complete the transaction.",
                         fontSize = 14.sp,
                         color = Color.Gray,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(top = 8.dp)
                     )
                     Spacer(modifier = Modifier.height(24.dp))
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Cancel", color = Color.Gray)
+                    }
                 }
                 
                 is SheetState.Success -> {
@@ -112,7 +119,7 @@ fun BottomSheetContent(
                         color = Color.Red
                     )
                     Text(
-                        text = state.message,
+                        text = ErrorMapper.mapRawMessageToUserFriendly(state.message),
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(top = 8.dp),
                         color = Color.Gray

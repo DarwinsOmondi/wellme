@@ -177,19 +177,21 @@ class WalletRepositoryImpl @Inject constructor(
         idempotencyKey: String
     ): Result<String> {
         return try {
-            val jsonString = buildJsonObject {
+            val jsonObject = buildJsonObject {
                 put("amount_in_cents", amountInCents)
                 put("phone_number", phoneNumber)
                 put("idempotency_key", idempotencyKey)
-            }.toString()
+            }
 
-            val response = functions.invoke("wallet-topup-initiate", jsonString)
+            Log.d(tag, "Calling wallet-topup-initiate with $jsonObject")
+
+            val response = functions.invoke("wallet-topup-initiate", jsonObject)
             val responseString = response.bodyAsText()
             val responseBody =
                 kotlinx.serialization.json.Json.decodeFromString<JsonObject>(responseString)
             val paymentAttemptId =
-                responseBody.get("payment_attempt_id")?.toString()?.replace("\"", "")
-                    ?: responseBody.get("id")?.toString()?.replace("\"", "")
+                responseBody["payment_attempt_id"]?.toString()?.replace("\"", "")
+                    ?: responseBody["id"]?.toString()?.replace("\"", "")
                     ?: idempotencyKey
             Result.success(paymentAttemptId)
         } catch (e: Exception) {

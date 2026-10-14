@@ -63,6 +63,7 @@ fun StudentScreen(
         studentKyc = studentKyc,
         onDeposit = { amount, phone -> viewModel.initiateDeposit(amount, phone) },
         onRefresh = { viewModel.refreshWallet() },
+        onDismissSheet = { viewModel.resetScanner() },
         onProfileClick = onProfileClick,
         onDiscoverClick = onDiscoverClick,
         onNotificationClick = onNotificationClick,
@@ -79,6 +80,7 @@ fun StudentContent(
     studentKyc: com.example.wellme.data.remote.model.StudentKyc?,
     onDeposit: (Double, String) -> Unit,
     onRefresh: () -> Unit,
+    onDismissSheet: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onDiscoverClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {},
@@ -266,13 +268,16 @@ fun StudentContent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f)),
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .clickable { onDismissSheet() },
                 contentAlignment = Alignment.BottomCenter
             ) {
-                BottomSheetContent(
-                    state = sheetState,
-                    onDismiss = {}
-                )
+                Box(modifier = Modifier.clickable(enabled = false) {}) {
+                    BottomSheetContent(
+                        state = sheetState,
+                        onDismiss = onDismissSheet
+                    )
+                }
             }
         }
     }
