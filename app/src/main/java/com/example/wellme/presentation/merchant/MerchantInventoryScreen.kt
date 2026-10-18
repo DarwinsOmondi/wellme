@@ -27,12 +27,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.wellme.R
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import com.example.wellme.domain.model.MerchantItem
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MerchantInventoryScreen(
     viewModel: MerchantInventoryViewModel,
@@ -44,6 +46,7 @@ fun MerchantInventoryScreen(
     val lowStock by viewModel.lowStockCount.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     MerchantInventoryContent(
         inventory = inventory,
@@ -51,6 +54,8 @@ fun MerchantInventoryScreen(
         lowStock = lowStock,
         searchQuery = searchQuery,
         selectedCategory = selectedCategory,
+        isRefreshing = isRefreshing,
+        onRefresh = { viewModel.refresh() },
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onCategoryChange = viewModel::onCategoryChange,
         onUpdateStock = viewModel::updateStock,
@@ -59,6 +64,7 @@ fun MerchantInventoryScreen(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MerchantInventoryContent(
     inventory: List<MerchantItem>,
@@ -66,6 +72,8 @@ fun MerchantInventoryContent(
     lowStock: Int,
     searchQuery: String,
     selectedCategory: String,
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
     onSearchQueryChange: (String) -> Unit,
     onCategoryChange: (String) -> Unit,
     onUpdateStock: (String, Int) -> Unit,
@@ -75,7 +83,12 @@ fun MerchantInventoryContent(
     val categories = listOf("All Items", "Food", "Drinks", "Merch")
     var itemToEdit by remember { mutableStateOf<MerchantItem?>(null) }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -201,6 +214,7 @@ fun MerchantInventoryContent(
             )
         }
     }
+}
 }
 
 @Composable

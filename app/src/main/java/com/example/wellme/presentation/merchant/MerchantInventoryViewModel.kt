@@ -7,10 +7,12 @@ import com.example.wellme.domain.model.MerchantItem
 import com.example.wellme.domain.repository.AuthRepository
 import com.example.wellme.domain.repository.MerchantInventoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MerchantInventoryViewModel @Inject constructor(
     private val inventoryRepository: MerchantInventoryRepository,
@@ -35,20 +37,36 @@ class MerchantInventoryViewModel @Inject constructor(
     }
 
     // --- Inventory State ---
+    private val _refreshTrigger = MutableStateFlow(0)
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                _refreshTrigger.value += 1
+            } catch (e: Throwable) {
+                android.util.Log.e("MerchantInventoryVM", "Error refreshing inventory", e)
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
     private val _selectedCategory = MutableStateFlow("All Items")
     val selectedCategory = _selectedCategory.asStateFlow()
 
-    val inventory = inventoryRepository.getInventory(merchantId)
-        .combine(_searchQuery) { list, query ->
-            if (query.isBlank()) list else list.filter { it.name.contains(query, ignoreCase = true) }
-        }
-        .combine(_selectedCategory) { list, category ->
-            if (category == "All Items") list else list.filter { it.category == category }
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val inventory = _refreshTrigger.flatMapLatest {
+        inventoryRepository.getInventory(merchantId)
+    }.combine(_searchQuery) { list, query ->
+        if (query.isBlank()) list else list.filter { it.name.contains(query, ignoreCase = true) }
+    }.combine(_selectedCategory) { list, category ->
+        if (category == "All Items") list else list.filter { it.category == category }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // KPI Metrics
     val totalItemsCount = inventory.map { it.sumOf { item -> item.stockUnits } }

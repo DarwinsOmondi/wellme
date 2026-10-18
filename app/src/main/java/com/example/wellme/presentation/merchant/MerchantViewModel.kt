@@ -59,6 +59,24 @@ class MerchantViewModel @Inject constructor(
         loans.sumOf { it.amountRequestedInCents / 100.0 }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                if (merchantId.isNotBlank()) {
+                    loadDisbursedLoans()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MerchantViewModel", "Error refreshing merchant data", e)
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
+    }
+
     init {
         loadDisbursedLoans()
     }
@@ -84,6 +102,12 @@ class MerchantViewModel @Inject constructor(
     fun onSelectedYieldChange(value: Double) { selectedYield = value }
 
     fun submitCapitalRequest() {
+        val currentMerchantId = if (merchantId.isNotBlank()) merchantId else (authRepository.getCurrentUser()?.id ?: "")
+        if (currentMerchantId.isBlank()) {
+            viewModelScope.launch { _uiEvent.emit(UiEvent.ShowSnackbar("User not authenticated. Please sign in again.")) }
+            return
+        }
+
         val amount = amountInput.toDoubleOrNull() ?: 0.0
         if (amount <= 0) {
             viewModelScope.launch { _uiEvent.emit(UiEvent.ShowSnackbar("Please enter a valid funding amount")) }
@@ -93,7 +117,7 @@ class MerchantViewModel @Inject constructor(
         viewModelScope.launch {
             loanState = LoanLifecycleState.SubmittingRpc
             try {
-                requestLoanUseCase.execute(merchantId, amount, selectedYield).collect { state ->
+                requestLoanUseCase.execute(currentMerchantId, amount, selectedYield).collect { state ->
                     loanState = state
                     if (state is LoanLifecycleState.OperationalError) {
                         _uiEvent.emit(UiEvent.ShowSnackbar(state.message))

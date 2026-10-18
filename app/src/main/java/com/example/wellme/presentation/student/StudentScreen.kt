@@ -29,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import com.example.wellme.R
 import com.example.wellme.domain.model.StudentWallet
 import com.example.wellme.domain.model.Transaction
@@ -55,12 +56,14 @@ fun StudentScreen(
     val transactions by viewModel.transactions.collectAsState()
     val sheetState by viewModel.sheetState.collectAsState()
     val studentKyc by viewModel.studentKyc.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     StudentContent(
         wallet = wallet,
         transactions = transactions,
         sheetState = sheetState,
         studentKyc = studentKyc,
+        isRefreshing = isRefreshing,
         onDeposit = { amount, phone -> viewModel.initiateDeposit(amount, phone) },
         onRefresh = { viewModel.refreshWallet() },
         onDismissSheet = { viewModel.resetScanner() },
@@ -78,6 +81,7 @@ fun StudentContent(
     transactions: List<Transaction>,
     sheetState: SheetState,
     studentKyc: com.example.wellme.data.remote.model.StudentKyc?,
+    isRefreshing: Boolean = false,
     onDeposit: (Double, String) -> Unit,
     onRefresh: () -> Unit,
     onDismissSheet: () -> Unit = {},
@@ -105,14 +109,19 @@ fun StudentContent(
             .joinToString("")
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF8F9FB))
-                .verticalScroll(rememberScrollState())
-                .padding(bottom = 100.dp)
-        ) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF8F9FB))
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 100.dp)
+            ) {
             // Header
             StudentHeader(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
@@ -281,6 +290,7 @@ fun StudentContent(
             }
         }
     }
+}
 }
 
 @Composable

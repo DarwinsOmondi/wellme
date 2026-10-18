@@ -31,6 +31,7 @@ fun MerchantScreen(
     val merchant by viewModel.merchant.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
     val progress by viewModel.poolProgress.collectAsState()
+    val isViewModelRefreshing by viewModel.isRefreshing.collectAsState()
     
     var activeTab by remember { mutableStateOf(0) } // 0: Inventory, 1: Sales Statements, 2: Impact & Loans
 
@@ -86,6 +87,8 @@ fun MerchantScreen(
                         merchant = merchant,
                         progress = progress,
                         transactions = transactions,
+                        isRefreshing = isViewModelRefreshing,
+                        onRefresh = { viewModel.refresh() },
                         modifier = Modifier.fillMaxSize()
                     )
                     2 -> RequestCapitalTab(
@@ -97,6 +100,8 @@ fun MerchantScreen(
                         onSubmit = { viewModel.submitCapitalRequest() },
                         onViewLoansHistory = onNavigateToLoansHistory,
                         onDismissStatus = viewModel::resetLoanState,
+                        isRefreshing = isViewModelRefreshing,
+                        onRefresh = { viewModel.refresh() },
                         modifier = Modifier.fillMaxSize()
                     )
                 }

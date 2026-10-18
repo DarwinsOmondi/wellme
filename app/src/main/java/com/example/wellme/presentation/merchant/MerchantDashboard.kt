@@ -22,6 +22,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wellme.R
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.model.Transaction
 import com.example.wellme.theme.PrimaryBlue
@@ -31,21 +33,29 @@ import com.example.wellme.theme.WellMeTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MerchantDashboard(
     merchant: MerchantProfile?,
     progress: Float,
     transactions: List<Transaction>,
+    isRefreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val raisedKsh = merchant?.let { it.poolRaisedInCents / 100.0 } ?: 0.0
     val targetKsh = merchant?.let { it.poolTargetInCents / 100.0 } ?: 0.0
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 20.dp)
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier.fillMaxSize()
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp)
+        ) {
         Spacer(modifier = Modifier.height(16.dp))
         
         Text(
@@ -117,6 +127,7 @@ fun MerchantDashboard(
             }
         }
     }
+}
 }
 
 @Composable

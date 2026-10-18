@@ -64,10 +64,17 @@ class AuthRepositoryImpl @Inject constructor(
     override fun getCurrentUser(): UserInfo? {
         val user = auth.currentUserOrNull()
         user?.let { u ->
-            Codeskop.identify(
-                userId = u.id,
-                traits = mapOf("role" to u.appMetadata?.get("role"))
-            )
+            try {
+                val userId: String? = u.id
+                if (!userId.isNullOrBlank()) {
+                    Codeskop.identify(
+                        userId = userId,
+                        traits = mapOf("role" to u.appMetadata?.get("role"))
+                    )
+                }
+            } catch (_: Throwable) {
+                // Ignore if SDK is not initialized in unit tests
+            }
         }
         Log.d(TAG, "getCurrentUser: ${user?.id ?: "No user logged in"}")
         return user

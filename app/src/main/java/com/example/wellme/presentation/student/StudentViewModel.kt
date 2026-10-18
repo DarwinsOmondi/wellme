@@ -332,6 +332,9 @@ class StudentViewModel @Inject constructor(
         initiateDeposit(amountInKsh, phoneNumber)
     }
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     fun resetScanner() {
         Log.d(TAG, "resetScanner")
         pendingJob?.cancel()
@@ -341,7 +344,20 @@ class StudentViewModel @Inject constructor(
 
     fun refreshWallet() {
         Log.d(TAG, "manual refreshWallet for studentId: $studentId")
-        _refreshTrigger.value += 1
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                if (studentId.isNotBlank()) {
+                    walletRepository.refreshWallet(studentId)
+                    loadStudentKyc()
+                }
+                _refreshTrigger.value += 1
+            } catch (e: Exception) {
+                Log.e(TAG, "Error refreshing wallet", e)
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
     }
 
     fun setObserveRealtime(observe: Boolean) {

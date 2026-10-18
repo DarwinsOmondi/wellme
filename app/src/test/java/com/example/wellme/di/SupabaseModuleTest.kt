@@ -20,7 +20,7 @@ class SupabaseModuleTest {
         val expected: Auth = mock()
         
         whenever(client.pluginManager).thenReturn(pluginManager)
-        whenever(pluginManager.getPlugin(Auth)).thenReturn(expected)
+        whenever(pluginManager.installedPlugins).thenReturn(mapOf(Auth.key to expected))
         
         val result = SupabaseModule.provideSupabaseAuth(client)
         assertEquals(expected, result)
@@ -33,7 +33,7 @@ class SupabaseModuleTest {
         val expected: Postgrest = mock()
         
         whenever(client.pluginManager).thenReturn(pluginManager)
-        whenever(pluginManager.getPlugin(Postgrest)).thenReturn(expected)
+        whenever(pluginManager.installedPlugins).thenReturn(mapOf(Postgrest.key to expected))
         
         val result = SupabaseModule.provideSupabasePostgrest(client)
         assertEquals(expected, result)
@@ -46,7 +46,7 @@ class SupabaseModuleTest {
         val expected: Storage = mock()
         
         whenever(client.pluginManager).thenReturn(pluginManager)
-        whenever(pluginManager.getPlugin(Storage)).thenReturn(expected)
+        whenever(pluginManager.installedPlugins).thenReturn(mapOf(Storage.key to expected))
         
         val result = SupabaseModule.provideSupabaseStorage(client)
         assertEquals(expected, result)
@@ -59,7 +59,7 @@ class SupabaseModuleTest {
         val expected: Realtime = mock()
         
         whenever(client.pluginManager).thenReturn(pluginManager)
-        whenever(pluginManager.getPlugin(Realtime)).thenReturn(expected)
+        whenever(pluginManager.installedPlugins).thenReturn(mapOf(Realtime.key to expected))
         
         val result = SupabaseModule.provideSupabaseRealtime(client)
         assertEquals(expected, result)
