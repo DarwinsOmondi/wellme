@@ -2,6 +2,7 @@ package com.example.wellme.presentation.merchant
 
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.repository.AuthRepository
+import com.example.wellme.domain.repository.KycRepository
 import com.example.wellme.domain.repository.LoanRepository
 import com.example.wellme.domain.repository.MerchantRepository
 import com.example.wellme.domain.usecase.GetMerchantPoolProgressUseCase
@@ -33,6 +34,7 @@ class MerchantViewModelTest {
     private val merchantRepository: MerchantRepository = mock()
     private val loanRepository: LoanRepository = mock()
     private val authRepository: AuthRepository = mock()
+    private val kycRepository: KycRepository = mock()
     private val getMerchantPoolProgressUseCase: GetMerchantPoolProgressUseCase = mock()
     private val requestLoanUseCase: RequestLoanUseCase = mock()
     private val processPaymentUseCase: ProcessPaymentUseCase = mock()
@@ -56,6 +58,7 @@ class MerchantViewModelTest {
             merchantRepository = merchantRepository,
             loanRepository = loanRepository,
             authRepository = authRepository,
+            kycRepository = kycRepository,
             getMerchantPoolProgressUseCase = getMerchantPoolProgressUseCase,
             requestLoanUseCase = requestLoanUseCase,
             processPaymentUseCase = processPaymentUseCase

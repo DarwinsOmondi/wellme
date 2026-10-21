@@ -48,6 +48,7 @@ fun MerchantPOSScreen(
     val cart by viewModel.cart.collectAsState()
     val total by viewModel.totalPrice.collectAsState()
     val qrDialogAmount by viewModel.qrDialogAmount.collectAsState()
+    val merchantAvatarUrl by merchantViewModel.merchantAvatarUrl.collectAsState()
     
     var isScanningCustomer by remember { mutableStateOf(false) }
 
@@ -84,6 +85,7 @@ fun MerchantPOSScreen(
             onAddToCart = viewModel::addToCart,
             onClearCart = viewModel::clearCart,
             onGenerateQr = viewModel::generateQr,
+            avatarUrl = merchantAvatarUrl,
             onProfileClick = onProfileClick,
             onScanCustomer = { isScanningCustomer = true },
             modifier = modifier
@@ -99,6 +101,7 @@ fun MerchantPOSContent(
     onAddToCart: (MerchantItem) -> Unit,
     onClearCart: () -> Unit,
     onGenerateQr: (Double) -> Unit,
+    avatarUrl: String?,
     onProfileClick: () -> Unit,
     onScanCustomer: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -110,7 +113,7 @@ fun MerchantPOSContent(
             .statusBarsPadding()
     ) {
         // Header
-        MerchantPOSHeader(onProfileClick = onProfileClick)
+        MerchantPOSHeader(avatarUrl = avatarUrl, onProfileClick = onProfileClick)
 
         Column(
             modifier = Modifier
@@ -190,7 +193,7 @@ fun MerchantPOSContent(
 }
 
 @Composable
-fun MerchantPOSHeader(onProfileClick: () -> Unit) {
+fun MerchantPOSHeader(avatarUrl: String?, onProfileClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -205,11 +208,20 @@ fun MerchantPOSHeader(onProfileClick: () -> Unit) {
                 .clickable { onProfileClick() },
             color = Color.LightGray
         ) {
-            AsyncImage(
-                model = "https://ui-avatars.com/api/?name=Merchant&background=2563EB&color=fff",
-                contentDescription = "Profile",
-                modifier = Modifier.fillMaxSize()
-            )
+            if (!avatarUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = "Profile",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                AsyncImage(
+                    model = "https://ui-avatars.com/api/?name=Merchant&background=2563EB&color=fff",
+                    contentDescription = "Profile",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         Text(
@@ -520,6 +532,7 @@ fun MerchantPOSPreview() {
             onAddToCart = {},
             onClearCart = {},
             onGenerateQr = {},
+            avatarUrl = null,
             onProfileClick = {}
         )
     }

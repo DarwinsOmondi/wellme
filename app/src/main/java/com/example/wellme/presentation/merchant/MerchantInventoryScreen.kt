@@ -1,9 +1,9 @@
 package com.example.wellme.presentation.merchant
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -13,7 +13,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -28,13 +27,13 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.wellme.R
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.ui.Alignment
 import com.example.wellme.domain.model.MerchantItem
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MerchantInventoryScreen(
     viewModel: MerchantInventoryViewModel,
@@ -48,6 +47,8 @@ fun MerchantInventoryScreen(
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
 
+    val merchantAvatarUrl by viewModel.merchantAvatarUrl.collectAsState()
+
     MerchantInventoryContent(
         inventory = inventory,
         totalItems = totalItems,
@@ -59,6 +60,8 @@ fun MerchantInventoryScreen(
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onCategoryChange = viewModel::onCategoryChange,
         onUpdateStock = viewModel::updateStock,
+        onDelete = viewModel::deleteItem,
+        avatarUrl = merchantAvatarUrl,
         onProfileClick = onProfileClick,
         modifier = modifier
     )
@@ -77,11 +80,14 @@ fun MerchantInventoryContent(
     onSearchQueryChange: (String) -> Unit,
     onCategoryChange: (String) -> Unit,
     onUpdateStock: (String, Int) -> Unit,
+    onDelete: (item: MerchantItem) -> Unit,
+    avatarUrl: String?,
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val categories = listOf("All Items", "Food", "Drinks", "Merch")
-    var itemToEdit by remember { mutableStateOf<MerchantItem?>(null) }
+    var selectedItem by remember { mutableStateOf<MerchantItem?>(null) }
+    var action by remember { mutableStateOf("") }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -89,132 +95,153 @@ fun MerchantInventoryContent(
         modifier = modifier.fillMaxSize()
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-        ) {
-            // Header
-            MerchantInventoryHeader(onProfileClick = onProfileClick)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+            ) {
+                // Header
+                MerchantInventoryHeader(avatarUrl = avatarUrl, onProfileClick = onProfileClick)
 
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                // Search & Filter
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = onSearchQueryChange,
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Search inventory...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                            cursorColor = MaterialTheme.colorScheme.primary
-                        ),
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Surface(
-                        modifier = Modifier.size(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        color = PrimaryBlue
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    // Search & Filter
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.FilterList, contentDescription = "Filter", tint = Color.White)
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Category Pills
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(categories) { category ->
-                        CategoryPill(
-                            name = category,
-                            isSelected = selectedCategory == category,
-                            onClick = { onCategoryChange(category) }
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = onSearchQueryChange,
+                            modifier = Modifier.weight(1f),
+                            placeholder = { Text("Search inventory...") },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                cursorColor = MaterialTheme.colorScheme.primary
+                            ),
+                            singleLine = true
                         )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // KPI Metrics
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    KpiCard(
-                        title = "Total Items",
-                        value = totalItems.toString().padStart(2, '0'),
-                        backgroundColor = PrimaryBlueLight,
-                        contentColor = PrimaryBlue,
-                        modifier = Modifier.weight(1f)
-                    )
-                    KpiCard(
-                        title = "Low Stock",
-                        value = lowStock.toString().padStart(2, '0'),
-                        backgroundColor = Color(0xFFFFDDB3),
-                        contentColor = Color(0xFF8B5000),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Text(
-                    text = "Stock Overview",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1C1E)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Items List
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 100.dp) // Spacing for FAB/Nav
-                ) {
-                    if (inventory.isEmpty()) {
-                        item {
-                            Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                                Text("No items found", color = Color.Gray)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Surface(
+                            modifier = Modifier.size(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            color = PrimaryBlue
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.FilterList,
+                                    contentDescription = "Filter",
+                                    tint = Color.White
+                                )
                             }
                         }
                     }
-                    items(inventory) { item ->
-                        InventoryItemCard(
-                            item = item,
-                            onEdit = { itemToEdit = item }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Category Pills
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(categories) { category ->
+                            CategoryPill(
+                                name = category,
+                                isSelected = selectedCategory == category,
+                                onClick = { onCategoryChange(category) }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // KPI Metrics
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        KpiCard(
+                            title = "Total Items",
+                            value = totalItems.toString().padStart(2, '0'),
+                            backgroundColor = PrimaryBlueLight,
+                            contentColor = PrimaryBlue,
+                            modifier = Modifier.weight(1f)
                         )
+                        KpiCard(
+                            title = "Low Stock",
+                            value = lowStock.toString().padStart(2, '0'),
+                            backgroundColor = Color(0xFFFFDDB3),
+                            contentColor = Color(0xFF8B5000),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Text(
+                        text = "Stock Overview",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1A1C1E)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Items List
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp) // Spacing for FAB/Nav
+                    ) {
+                        if (inventory.isEmpty()) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("No items found", color = Color.Gray)
+                                }
+                            }
+                        }
+                        items(inventory) { item ->
+                            InventoryItemCard(
+                                item = item,
+                                onEdit = { selectedItem = item },
+                                onDelete = { selectedItem = item },
+                                onAction = { action = it }
+                            )
+                        }
                     }
                 }
             }
-        }
 
-        // Edit Stock Dialog
-        itemToEdit?.let { item ->
-            EditStockDialog(
-                item = item,
-                onDismiss = { itemToEdit = null },
-                onConfirm = { newStock ->
-                    onUpdateStock(item.id, newStock)
-                    itemToEdit = null
+            selectedItem?.let { item ->
+                if (action == "edit") {
+                    EditStockDialog(
+                        item = item,
+                        onDismiss = { selectedItem = null },
+                        onConfirm = { newStock ->
+                            onUpdateStock(item.id, newStock)
+                            selectedItem = null
+                        }
+                    )
+                } else {
+                    DeleteDialog(
+                        item = item,
+                        onDismiss = { selectedItem = null },
+                        onConfirm = {
+                            onDelete(item)
+                            selectedItem = null
+                        }
+                    )
                 }
-            )
+            }
         }
     }
-}
 }
 
 @Composable
@@ -260,27 +287,70 @@ fun EditStockDialog(
     )
 }
 
+
 @Composable
-fun MerchantInventoryHeader(onProfileClick: () -> Unit) {
+fun DeleteDialog(
+    item: MerchantItem,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete Item: ${item.name}", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Do you want to delete this item from your inventory?.")
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirm()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Delete")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancel", color = Color.Gray)
+            }
+        }
+    )
+}
+
+
+@Composable
+fun MerchantInventoryHeader(avatarUrl: String?, onProfileClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 20.dp, horizontal = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
-            modifier = Modifier
+            modifier = Modifier.padding(end = 30.dp)
                 .size(44.dp)
                 .clip(CircleShape)
                 .clickable { onProfileClick() },
             color = Color.LightGray
         ) {
-            AsyncImage(
-                model = "https://ui-avatars.com/api/?name=Merchant&background=2563EB&color=fff",
-                contentDescription = "Profile",
-                modifier = Modifier.fillMaxSize()
-            )
+            if (!avatarUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = "Profile",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                AsyncImage(
+                    model = "https://ui-avatars.com/api/?name=Merchant&background=2563EB&color=fff",
+                    contentDescription = "Profile",
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
 
         Text(
@@ -289,10 +359,6 @@ fun MerchantInventoryHeader(onProfileClick: () -> Unit) {
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
-
-        IconButton(onClick = { /* Settings */ }) {
-            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.Gray, modifier = Modifier.size(28.dp))
-        }
     }
 }
 
@@ -302,7 +368,10 @@ fun CategoryPill(name: String, isSelected: Boolean, onClick: () -> Unit) {
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         color = if (isSelected) PrimaryBlue else Color.White,
-        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0)),
+        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(
+            1.dp,
+            Color(0xFFE0E0E0)
+        ),
         shadowElevation = if (isSelected) 2.dp else 0.dp
     ) {
         Text(
@@ -329,17 +398,33 @@ fun KpiCard(
         color = backgroundColor
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text(text = title, color = contentColor, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            Text(
+                text = title,
+                color = contentColor,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = value, color = contentColor, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
+            Text(
+                text = value,
+                color = contentColor,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
     }
 }
 
 @Composable
-fun InventoryItemCard(item: MerchantItem, onEdit: () -> Unit) {
+fun InventoryItemCard(
+    item: MerchantItem,
+    onAction: (String) -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
     val isLowStock = item.stockUnits <= 5
-    
+    var expanded by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -360,25 +445,30 @@ fun InventoryItemCard(item: MerchantItem, onEdit: () -> Unit) {
                 placeholder = painterResource(id = R.drawable.ic_restaurant),
                 error = painterResource(id = R.drawable.ic_restaurant)
             )
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1A1C1E))
+                    Text(
+                        text = item.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color(0xFF1A1C1E)
+                    )
                     Text(
                         text = String.format(Locale.getDefault(), "KSh %,.2f", item.price),
                         color = PrimaryBlue,
                         fontWeight = FontWeight.Bold
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Stock: ${item.stockUnits} units",
@@ -412,9 +502,36 @@ fun InventoryItemCard(item: MerchantItem, onEdit: () -> Unit) {
                     }
                 }
             }
-            
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.LightGray, modifier = Modifier.size(20.dp))
+
+            IconButton(onClick = { expanded = true }) {
+                Icon(
+                    Icons.Default.Menu,
+                    contentDescription = "Edit",
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    onClick = {
+                        expanded = false
+                        onDelete()
+                        onAction("delete")
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    onClick = {
+                        expanded = false
+                        onEdit()
+                        onAction("edit")
+                    }
+                )
             }
         }
     }
@@ -436,6 +553,8 @@ fun MerchantInventoryPreview() {
             onSearchQueryChange = {},
             onCategoryChange = {},
             onUpdateStock = { _, _ -> },
+            onDelete = {},
+            avatarUrl = null,
             onProfileClick = {}
         )
     }

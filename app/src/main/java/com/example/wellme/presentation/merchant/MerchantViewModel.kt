@@ -11,6 +11,7 @@ import com.example.wellme.domain.model.MerchantLoanDto
 import com.example.wellme.domain.model.MerchantProfile
 import com.example.wellme.domain.model.Transaction
 import com.example.wellme.domain.repository.AuthRepository
+import com.example.wellme.domain.repository.KycRepository
 import com.example.wellme.domain.repository.LoanRepository
 import com.example.wellme.domain.repository.MerchantRepository
 import com.example.wellme.domain.usecase.GetMerchantPoolProgressUseCase
@@ -27,6 +28,7 @@ class MerchantViewModel @Inject constructor(
     private val merchantRepository: MerchantRepository,
     private val loanRepository: LoanRepository,
     private val authRepository: AuthRepository,
+    private val kycRepository: KycRepository,
     private val getMerchantPoolProgressUseCase: GetMerchantPoolProgressUseCase,
     private val requestLoanUseCase: RequestLoanUseCase,
     private val processPaymentUseCase: ProcessPaymentUseCase
@@ -42,6 +44,21 @@ class MerchantViewModel @Inject constructor(
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val _merchantAvatarUrl = MutableStateFlow<String?>(null)
+    val merchantAvatarUrl: StateFlow<String?> = _merchantAvatarUrl.asStateFlow()
+
+    private fun loadMerchantAvatar() {
+        if (merchantId.isBlank()) return
+        viewModelScope.launch {
+            try {
+                val kyc = kycRepository.getMerchantKyc(merchantId).getOrNull()
+                _merchantAvatarUrl.value = kyc?.avatarUrl
+            } catch (e: Exception) {
+                android.util.Log.e("MerchantViewModel", "Error loading merchant avatar", e)
+            }
+        }
+    }
 
     var amountInput by mutableStateOf("")
     var selectedYield by mutableDoubleStateOf(0.15)
@@ -79,6 +96,7 @@ class MerchantViewModel @Inject constructor(
 
     init {
         loadDisbursedLoans()
+        loadMerchantAvatar()
     }
 
     fun loadDisbursedLoans() {

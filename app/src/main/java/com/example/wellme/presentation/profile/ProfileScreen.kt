@@ -1,5 +1,6 @@
 package com.example.wellme.presentation.profile
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -116,26 +117,6 @@ fun ProfileScreenContent(
                         )
                     }
                 },
-                actions = {
-                    if (!isGuest) {
-                        val avatarUrl = (state as? ProfileUiState.Success)?.profile?.avatarUrl
-                        Box(
-                            modifier = Modifier
-                                .padding(end = 16.dp)
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color.LightGray)
-                                .clickable(onClick = onAvatarClick)
-                        ) {
-                            AsyncImage(
-                                model = avatarUrl ?: "https://ui-avatars.com/api/?name=User&background=random",
-                                contentDescription = "Profile",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                    }
-                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color.Transparent
                 )
@@ -221,6 +202,8 @@ fun ProfileScreenContent(
                     }
                     is ProfileUiState.Success -> {
                         val profile = state.profile
+
+                        Log.d("ProfileScreen", "Profile: $profile")
                         
                         // Large Interactive Profile Picture Avatar
                         Box(

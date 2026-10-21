@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.wellme.domain.model.MerchantItem
 import com.example.wellme.domain.repository.AuthRepository
+import com.example.wellme.domain.repository.KycRepository
 import com.example.wellme.domain.repository.MerchantInventoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -16,13 +17,34 @@ import javax.inject.Inject
 @HiltViewModel
 class MerchantInventoryViewModel @Inject constructor(
     private val inventoryRepository: MerchantInventoryRepository,
+    private val kycRepository: KycRepository,
     authRepository: AuthRepository
 ) : ViewModel() {
 
     private val merchantId = authRepository.getCurrentUser()?.id ?: ""
 
+    private val _merchantAvatarUrl = MutableStateFlow<String?>(null)
+    val merchantAvatarUrl: StateFlow<String?> = _merchantAvatarUrl.asStateFlow()
+
+    init {
+        loadMerchantAvatar()
+    }
+
+    private fun loadMerchantAvatar() {
+        if (merchantId.isBlank()) return
+        viewModelScope.launch {
+            try {
+                val kyc = kycRepository.getMerchantKyc(merchantId).getOrNull()
+                _merchantAvatarUrl.value = kyc?.avatarUrl
+            } catch (e: Exception) {
+                android.util.Log.e("MerchantInventoryVM", "Error loading merchant avatar", e)
+            }
+        }
+    }
+
     private val _cart = MutableStateFlow<List<MerchantItem>>(emptyList())
     val cart = _cart.asStateFlow()
+
 
     val totalPrice = _cart.map { items ->
         items.sumOf { it.price }
@@ -103,6 +125,18 @@ class MerchantInventoryViewModel @Inject constructor(
                 inventoryRepository.updateStock(itemId, newStock)
             } catch (e: Throwable) {
                 android.util.Log.e("MerchantInventoryVM", "Error updating stock", e)
+            }
+        }
+    }
+
+    fun deleteItem(item: MerchantItem, onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                inventoryRepository.deleteItem(item.id)
+            } catch (e: Throwable) {
+                android.util.Log.e("MerchantInventoryVM", "Error deleting item", e)
+            } finally {
+                onComplete()
             }
         }
     }
