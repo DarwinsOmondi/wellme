@@ -30,13 +30,13 @@ class MerchantRepositoryImpl @Inject constructor(
     override fun getMerchant(merchantId: String, observeRealtime: Boolean): Flow<MerchantProfile?> {
         Log.d(TAG, "getMerchant flow requested for: $merchantId (Realtime: $observeRealtime)")
         return merchantDao.getMerchantFlow(merchantId)
-            .onStart { 
+            .onStart {
                 Log.d(TAG, "Refreshing merchant: $merchantId")
-                refreshMerchant(merchantId) 
+                refreshMerchant(merchantId)
             }
-            .map { 
+            .map {
                 Log.d(TAG, "Merchant data emitted for $merchantId: ${it?.businessName}")
-                it?.toDomain() 
+                it?.toDomain()
             }
     }
 
@@ -50,7 +50,7 @@ class MerchantRepositoryImpl @Inject constructor(
                     }
                 }
                 .decodeSingleOrNull<MerchantDto>()
-            
+
             dto?.let {
                 merchantDao.insertMerchant(MerchantEntity.fromDomain(it.toDomain()))
             }
@@ -74,7 +74,7 @@ class MerchantRepositoryImpl @Inject constructor(
             val dtos = postgrest["merchants"]
                 .select(columns = Columns.ALL)
                 .decodeList<MerchantDto>()
-            
+
             dtos.forEach { dto ->
                 merchantDao.insertMerchant(MerchantEntity.fromDomain(dto.toDomain()))
             }
@@ -100,13 +100,26 @@ class MerchantRepositoryImpl @Inject constructor(
     override fun getMerchantTransactions(merchantId: String): Flow<List<Transaction>> {
         Log.d(TAG, "getMerchantTransactions flow requested for: $merchantId")
         return transactionDao.getMerchantTransactionsFlow(merchantId)
-            .onStart { 
-                refreshTransactions(merchantId) 
+            .onStart {
+                refreshTransactions(merchantId)
             }
             .map { list ->
                 list.map { it.toDomain() }
             }
     }
+
+    override suspend fun updateMerchantTarget(
+        merchantId: String,
+        targetInCents: Long
+    ) {
+        Log.d(TAG, "Updating merchant target for $merchantId to $targetInCents")
+        try {
+            merchantDao.updateMerchantTarget(merchantId, targetInCents)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error updating merchant target", e)
+        }
+    }
+
 
     private suspend fun refreshTransactions(merchantId: String) {
         Log.d(TAG, "Refreshing transactions from remote for merchant: $merchantId")
@@ -118,7 +131,7 @@ class MerchantRepositoryImpl @Inject constructor(
                     }
                 }
                 .decodeList<TransactionDto>()
-            
+
             dtos.forEach { dto ->
                 transactionDao.insertTransaction(TransactionEntity.fromDomain(dto.toDomain()))
             }

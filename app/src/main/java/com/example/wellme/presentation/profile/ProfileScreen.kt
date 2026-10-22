@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import androidx.compose.ui.res.painterResource
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.example.wellme.R
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.PrimaryBlueLight
@@ -220,7 +222,10 @@ fun ProfileScreenContent(
                             ) {
                                 if (!profile.avatarUrl.isNullOrBlank()) {
                                     AsyncImage(
-                                        model = profile.avatarUrl,
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(profile.avatarUrl)
+                                            .crossfade(true)
+                                            .build(),
                                         contentDescription = "Profile Picture",
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop,

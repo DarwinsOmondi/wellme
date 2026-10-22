@@ -1,5 +1,6 @@
 package com.example.wellme.presentation.merchant
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -40,6 +41,7 @@ class MerchantViewModel @Inject constructor(
         .onEach { profile ->
             profile?.let {
                 amountInput = (it.poolTargetInCents / 100).toString()
+                target = (it.poolTargetInCents / 100).toString()
                 selectedYield = it.discountTier
             }
         }
@@ -47,6 +49,12 @@ class MerchantViewModel @Inject constructor(
 
     private val _merchantAvatarUrl = MutableStateFlow<String?>(null)
     val merchantAvatarUrl: StateFlow<String?> = _merchantAvatarUrl.asStateFlow()
+
+    var target by mutableStateOf("")
+    fun onTargetChange(value: String) {
+        target = value
+    }
+
 
     private fun loadMerchantAvatar() {
         if (merchantId.isBlank()) return
@@ -78,6 +86,19 @@ class MerchantViewModel @Inject constructor(
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    fun updateTarget() {
+        viewModelScope.launch {
+            try {
+                if (merchantId.isNotEmpty()) {
+                    val targetInCents = ((target.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                    merchantRepository.updateMerchantTarget(merchantId, targetInCents)
+                }
+            } catch (e: Exception) {
+                Log.e("MerchantViewModel", "Error updating merchant target", e)
+            }
+        }
+    }
 
     fun refresh() {
         viewModelScope.launch {
@@ -116,11 +137,18 @@ class MerchantViewModel @Inject constructor(
         object Success : UiEvent
     }
 
-    fun onAmountInputChange(value: String) { amountInput = value }
-    fun onSelectedYieldChange(value: Double) { selectedYield = value }
+    fun onAmountInputChange(value: String) {
+        amountInput = value
+    }
+
+    fun onSelectedYieldChange(value: Double) {
+        selectedYield = value
+    }
 
     fun submitCapitalRequest() {
-        val currentMerchantId = if (merchantId.isNotBlank()) merchantId else (authRepository.getCurrentUser()?.id ?: "")
+        val currentMerchantId =
+            if (merchantId.isNotBlank()) merchantId else (authRepository.getCurrentUser()?.id
+                ?: "")
         if (currentMerchantId.isBlank()) {
             viewModelScope.launch { _uiEvent.emit(UiEvent.ShowSnackbar("User not authenticated. Please sign in again.")) }
             return
@@ -135,15 +163,16 @@ class MerchantViewModel @Inject constructor(
         viewModelScope.launch {
             loanState = LoanLifecycleState.SubmittingRpc
             try {
-                requestLoanUseCase.execute(currentMerchantId, amount, selectedYield).collect { state ->
-                    loanState = state
-                    if (state is LoanLifecycleState.OperationalError) {
-                        _uiEvent.emit(UiEvent.ShowSnackbar(state.message))
-                    } else if (state is LoanLifecycleState.DisbursedSuccess) {
-                        _uiEvent.emit(UiEvent.ShowSnackbar("Funding request processed successfully!"))
-                        loadDisbursedLoans()
+                requestLoanUseCase.execute(currentMerchantId, amount, selectedYield)
+                    .collect { state ->
+                        loanState = state
+                        if (state is LoanLifecycleState.OperationalError) {
+                            _uiEvent.emit(UiEvent.ShowSnackbar(state.message))
+                        } else if (state is LoanLifecycleState.DisbursedSuccess) {
+                            _uiEvent.emit(UiEvent.ShowSnackbar("Funding request processed successfully!"))
+                            loadDisbursedLoans()
+                        }
                     }
-                }
             } catch (e: Throwable) {
                 android.util.Log.e("MerchantViewModel", "Failed to submit funding request", e)
                 val msg = ErrorMapper.getUserFriendlyMessage(e)
@@ -153,8 +182,9 @@ class MerchantViewModel @Inject constructor(
         }
     }
 
-    val transactions: StateFlow<List<Transaction>> = merchantRepository.getMerchantTransactions(merchantId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val transactions: StateFlow<List<Transaction>> =
+        merchantRepository.getMerchantTransactions(merchantId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val poolProgress: StateFlow<Float> = getMerchantPoolProgressUseCase(merchantId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0f)

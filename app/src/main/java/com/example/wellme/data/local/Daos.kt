@@ -31,6 +31,9 @@ interface MerchantDao {
 
     @Query("UPDATE merchants SET poolRaisedInCents = :raisedAmount WHERE merchantId = :merchantId")
     suspend fun updateMerchantPool(merchantId: String, raisedAmount: Long)
+
+    @Query("UPDATE merchants SET poolTargetInCents = :target WHERE merchantId = :merchantId")
+    suspend fun updateMerchantTarget(merchantId: String, target: Long)
 }
 
 @Dao

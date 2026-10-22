@@ -28,11 +28,8 @@ fun MerchantScreen(
     onNavigateToAddItem: () -> Unit = {},
     onNavigateToLoansHistory: () -> Unit = {}
 ) {
-    val merchant by viewModel.merchant.collectAsState()
-    val transactions by viewModel.transactions.collectAsState()
-    val progress by viewModel.poolProgress.collectAsState()
     val isViewModelRefreshing by viewModel.isRefreshing.collectAsState()
-    
+
     var activeTab by remember { mutableStateOf(0) } // 0: Inventory, 1: Sales Statements, 2: Impact & Loans
 
     Scaffold(
@@ -83,14 +80,11 @@ fun MerchantScreen(
                         onProfileClick = onProfileClick,
                         modifier = Modifier.fillMaxSize()
                     )
+
                     1 -> MerchantDashboard(
-                        merchant = merchant,
-                        progress = progress,
-                        transactions = transactions,
-                        isRefreshing = isViewModelRefreshing,
-                        onRefresh = { viewModel.refresh() },
                         modifier = Modifier.fillMaxSize()
                     )
+
                     2 -> RequestCapitalTab(
                         amountInput = viewModel.amountInput,
                         onAmountInputChange = viewModel::onAmountInputChange,

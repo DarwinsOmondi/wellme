@@ -20,8 +20,17 @@ interface WalletRepository {
     suspend fun logPendingPayment(payment: PendingPayment)
     fun observePendingPayment(checkoutRequestId: String): Flow<PendingPayment>
 
-    suspend fun initiateWalletTopUp(amountInCents: Long, phoneNumber: String, idempotencyKey: String): Result<String>
-    suspend fun checkoutWithWallet(items: List<CheckoutItem>, idempotencyKey: String): Result<CheckoutResult>
+    suspend fun initiateWalletTopUp(
+        amountInCents: Long,
+        phoneNumber: String,
+        idempotencyKey: String
+    ): Result<String>
+
+    suspend fun checkoutWithWallet(
+        items: List<CheckoutItem>,
+        idempotencyKey: String
+    ): Result<CheckoutResult>
+
     suspend fun getPaymentAttemptStatus(paymentAttemptId: String): Result<String>
 }
 
@@ -31,6 +40,8 @@ interface MerchantRepository {
     suspend fun insertMerchant(merchant: MerchantProfile)
     suspend fun updateMerchantPool(merchantId: String, raisedInCents: Long)
     fun getMerchantTransactions(merchantId: String): Flow<List<Transaction>>
+
+    suspend fun updateMerchantTarget(merchantId: String, targetInCents: Long)
 }
 
 interface MerchantInventoryRepository {

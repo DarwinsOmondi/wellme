@@ -1,12 +1,13 @@
 package com.example.wellme.presentation.merchant
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -24,7 +25,11 @@ import androidx.compose.ui.unit.sp
 import com.example.wellme.R
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import com.example.wellme.domain.model.MerchantProfile
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.wellme.domain.model.Transaction
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.PrimaryBlueDark
@@ -36,98 +41,158 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MerchantDashboard(
-    merchant: MerchantProfile?,
-    progress: Float,
-    transactions: List<Transaction>,
-    isRefreshing: Boolean = false,
-    onRefresh: () -> Unit = {},
+    viewModel: MerchantViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
+    var showTargetUpdateDialog by remember { mutableStateOf(false) }
+    val merchant by viewModel.merchant.collectAsState()
+    val transactions by viewModel.transactions.collectAsState()
+    val progress by viewModel.poolProgress.collectAsState()
+    val isViewModelRefreshing by viewModel.isRefreshing.collectAsState()
     val raisedKsh = merchant?.let { it.poolRaisedInCents / 100.0 } ?: 0.0
     val targetKsh = merchant?.let { it.poolTargetInCents / 100.0 } ?: 0.0
     PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
+        isRefreshing = isViewModelRefreshing,
+        onRefresh = { viewModel.refresh() },
         modifier = modifier.fillMaxSize()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp)
-        ) {
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "Financial Impact",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = PrimaryBlue,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        FundingProgressCard(
-            raisedAmount = raisedKsh,
-            targetAmount = targetKsh,
-            progress = progress,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        // Live Payout Stream Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
-                contentDescription = "Receipt icon",
-                tint = PrimaryBlue,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Text(
-                text = "Live Ledger",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1C1E)
-            )
-        }
-
-
-        // Incoming transactions list
-        if (transactions.isEmpty()) {
-            Box(
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
             ) {
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
-                    text = "Waiting for customer checkouts...\nTransactions will appear here in real-time.",
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp
+                    text = "Financial Impact",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryBlue,
+                    modifier = Modifier.padding(bottom = 24.dp)
                 )
+
+                FundingProgressCard(
+                    onUpdateTarget = {
+                        showTargetUpdateDialog = true
+                    },
+                    raisedAmount = raisedKsh,
+                    targetAmount = targetKsh,
+                    progress = progress,
+                    modifier = Modifier.padding(bottom = 32.dp),
+                )
+
+                // Live Payout Stream Header
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                        contentDescription = "Receipt icon",
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Text(
+                        text = "Live Ledger",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1A1C1E)
+                    )
+                }
+
+                // Incoming transactions list
+                if (transactions.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Waiting for customer checkouts...\nTransactions will appear here in real-time.",
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center,
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        contentPadding = PaddingValues(bottom = 24.dp)
+                    ) {
+                        items(transactions) { tx ->
+                            PayoutStreamItem(transaction = tx)
+                        }
+                    }
+                }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                items(transactions) { tx ->
-                    PayoutStreamItem(transaction = tx)
+
+            if (showTargetUpdateDialog) {
+                ModalBottomSheet(
+                    onDismissRequest = {
+                        showTargetUpdateDialog = false
+                    },
+                    sheetState = rememberModalBottomSheetState(),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp, vertical = 16.dp)
+                            .navigationBarsPadding(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Update Your Target Goal",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1A1C1E)
+                        )
+                        OutlinedTextField(
+                            value = viewModel.target,
+                            onValueChange = viewModel::onTargetChange,
+                            label = { Text("New Target (KSh)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        Button(
+                            onClick = {
+                                viewModel.updateTarget()
+                                showTargetUpdateDialog = false
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(26.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                                disabledContentColor = Color.White.copy(alpha = 0.8f)
+                            )
+                        ) {
+                            Text(
+                                text = "Update Target",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
             }
         }
     }
-}
 }
 
 @Composable
@@ -192,13 +257,17 @@ fun PayoutStreamItem(transaction: Transaction) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FundingProgressCard(
+    onUpdateTarget: () -> Unit,
     raisedAmount: Double,
     targetAmount: Double,
     progress: Float,
     modifier: Modifier = Modifier
 ) {
+
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -211,12 +280,30 @@ fun FundingProgressCard(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = stringResource(R.string.funding_progress),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1C1E)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    modifier = Modifier.padding(top = 16.dp),
+                    text = stringResource(R.string.funding_progress),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1C1E)
+                )
+
+                IconButton(
+                    onClick = {
+                        onUpdateTarget()
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = PrimaryBlueLight,
+                        contentColor = PrimaryBlue
+                    )
+                ) {
+                    Icon(imageVector = Icons.Filled.AutoGraph, contentDescription = "Target")
+                }
+            }
 
             Spacer(modifier = Modifier.height(28.dp))
 
@@ -289,27 +376,6 @@ fun FundingProgressCard(
 fun MerchantDashboardPreview() {
     WellMeTheme {
         MerchantDashboard(
-            merchant = MerchantProfile(
-                merchantId = "m1",
-                businessName = "Campus Cafe",
-                discountTier = 0.15,
-                poolTargetInCents = 200000L,
-                poolRaisedInCents = 120000L,
-                isVerified = true
-            ),
-            progress = 0.6f,
-            transactions = listOf(
-                Transaction(
-                    transactionId = "tx1",
-                    amountInCents = 45000,
-                    originalAmountInCents = 50000,
-                    discountAppliedInCents = 5000,
-                    timestamp = System.currentTimeMillis(),
-                    type = com.example.wellme.domain.model.TransactionType.PAYMENT,
-                    merchantId = "m1",
-                    studentId = "s1"
-                )
-            )
         )
     }
 }
