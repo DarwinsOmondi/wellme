@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withTimeout
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.decodeRecord
 import io.github.jan.supabase.realtime.postgresChangeFlow
@@ -97,17 +98,21 @@ class WalletRepositoryImpl @Inject constructor(
 
     @OptIn(DelicateCoroutinesApi::class)
     private suspend fun setupRealtimeWallet(studentId: String) {
-        val channelName = "wallet_$studentId"
-        val channel = realtime.channel(channelName)
-
-        channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
-            table = "student_wallets"
-        }.onEach { action ->
-            val record = action.decodeRecord<StudentWalletDto>()
-            walletDao.insertWallet(StudentWalletEntity.fromDomain(record.toDomain()))
-        }.launchIn(kotlinx.coroutines.GlobalScope)
-
         try {
+            val channelName = "wallet_$studentId"
+            val channel = realtime.channel(channelName)
+
+            if (channel.status.value != RealtimeChannel.Status.UNSUBSCRIBED) {
+                return
+            }
+
+            channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
+                table = "student_wallets"
+            }.onEach { action ->
+                val record = action.decodeRecord<StudentWalletDto>()
+                walletDao.insertWallet(StudentWalletEntity.fromDomain(record.toDomain()))
+            }.launchIn(kotlinx.coroutines.GlobalScope)
+
             realtime.connect()
             channel.subscribe()
         } catch (e: Exception) {
