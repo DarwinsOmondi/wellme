@@ -186,8 +186,14 @@ class MerchantViewModel @Inject constructor(
         merchantRepository.getMerchantTransactions(merchantId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val poolProgress: StateFlow<Float> = getMerchantPoolProgressUseCase(merchantId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0f)
+    val poolProgress: StateFlow<Float> = combine(merchant, transactions) { profile, txs ->
+        val target = profile?.poolTargetInCents ?: 0L
+        if (target <= 0L) 0.0f
+        else {
+            val raised = if (txs.isNotEmpty()) txs.sumOf { it.amountInCents } else (profile?.poolRaisedInCents ?: 0L)
+            (raised.toFloat() / target.toFloat()).coerceIn(0.0f, 1.0f)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0f)
 
     fun processCustomerPayment(studentId: String, originalAmountInCents: Long) {
         viewModelScope.launch {

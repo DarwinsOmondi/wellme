@@ -49,7 +49,11 @@ fun MerchantDashboard(
     val transactions by viewModel.transactions.collectAsState()
     val progress by viewModel.poolProgress.collectAsState()
     val isViewModelRefreshing by viewModel.isRefreshing.collectAsState()
-    val raisedKsh = merchant?.let { it.poolRaisedInCents / 100.0 } ?: 0.0
+    val raisedKsh = if (transactions.isNotEmpty()) {
+        transactions.sumOf { it.amountInCents } / 100.0
+    } else {
+        merchant?.let { it.poolRaisedInCents / 100.0 } ?: 0.0
+    }
     val targetKsh = merchant?.let { it.poolTargetInCents / 100.0 } ?: 0.0
     PullToRefreshBox(
         isRefreshing = isViewModelRefreshing,

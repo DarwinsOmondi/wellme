@@ -4,9 +4,15 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 enum class TransactionType {
-    PAYMENT,     // Wallet deduction for food
-    STIPEND,     // Wallet addition of stipend
-    FUNDING      // Merchant receiving direct cash
+    DEPOSIT,
+    PURCHASE,
+    WALLET_TOPUP,
+    UNKNOWN;
+
+    companion object {
+        fun fromDb(value: String?): TransactionType =
+            values().firstOrNull { it.name == value } ?: UNKNOWN
+    }
 }
 
 @Serializable

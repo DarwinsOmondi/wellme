@@ -47,7 +47,7 @@ object SupabaseModule {
                 }
             }
             install(Auth) {
-                autoLoadFromStorage = false
+                autoLoadFromStorage = true
             }
             install(Postgrest)
             install(Storage)

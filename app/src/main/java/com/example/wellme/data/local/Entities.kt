@@ -75,7 +75,7 @@ data class TransactionEntity(
         originalAmountInCents = originalAmountInCents,
         discountAppliedInCents = discountAppliedInCents,
         timestamp = timestamp,
-        type = TransactionType.valueOf(type),
+        type = TransactionType.fromDb(type),
         merchantId = merchantId,
         studentId = studentId
     )

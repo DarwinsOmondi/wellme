@@ -48,9 +48,10 @@ fun AddInventoryItemScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     AddInventoryItemContent(
-        onAddItem = { item, onComplete ->
-            viewModel.addItem(item, onComplete)
+        onAddItem = { item, imageUri, onComplete ->
+            viewModel.addItem(item, imageUri, context, onComplete)
         },
         onBack = onBack,
         modifier = modifier
@@ -60,7 +61,7 @@ fun AddInventoryItemScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddInventoryItemContent(
-    onAddItem: (MerchantItem, () -> Unit) -> Unit,
+    onAddItem: (MerchantItem, Uri?, () -> Unit) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -392,9 +393,10 @@ fun AddInventoryItemContent(
                             stockUnits = stockVal,
                             category = category,
                             description = description.trim(),
-                            imageUrl = selectedImageUri?.toString(),
+                            imageUrl = null,
                             merchantId = ""
-                        )
+                        ),
+                        selectedImageUri
                     ) {
                         isSaving = false
                         onBack()
@@ -509,7 +511,7 @@ fun Modifier.drawDashedBorder(
 fun AddInventoryItemScreenPreview() {
     WellMeTheme {
         AddInventoryItemContent(
-            onAddItem = { _, onComplete -> onComplete() },
+            onAddItem = { _, _, onComplete -> onComplete() },
             onBack = {}
         )
     }

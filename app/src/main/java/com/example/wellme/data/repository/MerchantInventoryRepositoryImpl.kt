@@ -56,10 +56,13 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
 
     override suspend fun upsertItem(item: MerchantItem): Result<String> {
         return try {
-            val itemId = postgrest.rpc(
+            val savedItemId = postgrest.rpc(
                 function = "merchant_upsert_item",
                 parameters = kotlinx.serialization.json.buildJsonObject {
-                    put("p_item_id", if (item.id.isBlank() || item.id == "0") null else item.id)
+                    put(
+                        "p_item_id",
+                        if (item.id.isBlank() || item.id == "0") null else item.id
+                    )
                     put("p_name", item.name)
                     put("p_price_kes", item.price)
                     put("p_stock_units", item.stockUnits)
@@ -68,14 +71,22 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
                     put("p_image_url", item.imageUrl)
                 }
             ).decodeAs<String>()
-            Result.success(itemId)
+
+            postgrest.rpc(
+                function = "merchant_set_item_availability",
+                parameters = kotlinx.serialization.json.buildJsonObject {
+                    put("p_item_id", savedItemId)
+                    put("p_is_available", item.isAvailable)
+                }
+            )
+
+            Result.success(savedItemId)
         } catch (e: Exception) {
-            Log.e(TAG, "Error in merchant_upsert_item RPC", e)
+            Log.e(TAG, "Error saving merchant item", e)
             Result.failure(e)
         }
     }
-
-    override suspend fun deleteItem(itemId: String): Result<Boolean> {
+    override suspend fun discontinueItem(itemId: String): Result<Boolean> {
         return try {
             val deleted = postgrest.rpc(
                 function = "merchant_delete_item",
@@ -86,6 +97,22 @@ class MerchantInventoryRepositoryImpl @Inject constructor(
             Result.success(deleted)
         } catch (e: Exception) {
             Log.e(TAG, "Error in merchant_delete_item RPC", e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun setItemAvailability(itemId: String, available: Boolean): Result<Unit> {
+        return try {
+            postgrest.rpc(
+                function = "merchant_set_item_availability",
+                parameters = buildJsonObject {
+                    put("p_item_id", itemId)
+                    put("p_is_available", available)
+                }
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in merchant_set_item_availability RPC", e)
             Result.failure(e)
         }
     }

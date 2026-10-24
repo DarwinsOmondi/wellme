@@ -60,7 +60,7 @@ fun MerchantInventoryScreen(
         onSearchQueryChange = viewModel::onSearchQueryChange,
         onCategoryChange = viewModel::onCategoryChange,
         onUpdateStock = viewModel::updateStock,
-        onDelete = viewModel::deleteItem,
+        onDelete = viewModel::discontinueItem,
         avatarUrl = merchantAvatarUrl,
         onProfileClick = onProfileClick,
         modifier = modifier
@@ -127,20 +127,6 @@ fun MerchantInventoryContent(
                             ),
                             singleLine = true
                         )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Surface(
-                            modifier = Modifier.size(56.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            color = PrimaryBlue
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Default.FilterList,
-                                    contentDescription = "Filter",
-                                    tint = Color.White
-                                )
-                            }
-                        }
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
@@ -230,7 +216,7 @@ fun MerchantInventoryContent(
                         }
                     )
                 } else {
-                    DeleteDialog(
+                    AvailabilityDialog(
                         item = item,
                         onDismiss = { selectedItem = null },
                         onConfirm = {
@@ -289,27 +275,26 @@ fun EditStockDialog(
 
 
 @Composable
-fun DeleteDialog(
+fun AvailabilityDialog(
     item: MerchantItem,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val actionText = if (item.isAvailable) "mark this item as unavailable" else "mark this item as available"
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Item: ${item.name}", fontWeight = FontWeight.Bold) },
+        title = { Text("Update Availability", fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Do you want to delete this item from your inventory?.")
+                Text("Are you sure you want to $actionText '${item.name}'?")
             }
         },
         confirmButton = {
             Button(
-                onClick = {
-                    onConfirm()
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
-                Text("Delete")
+                Text("Confirm")
             }
         },
         dismissButton = {
@@ -331,7 +316,8 @@ fun MerchantInventoryHeader(avatarUrl: String?, onProfileClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Surface(
-            modifier = Modifier.padding(end = 30.dp)
+            modifier = Modifier
+                .padding(end = 30.dp)
                 .size(44.dp)
                 .clip(CircleShape)
                 .clickable { onProfileClick() },
@@ -341,14 +327,15 @@ fun MerchantInventoryHeader(avatarUrl: String?, onProfileClick: () -> Unit) {
                 AsyncImage(
                     model = avatarUrl,
                     contentDescription = "Profile",
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
             } else {
-                AsyncImage(
-                    model = "https://ui-avatars.com/api/?name=Merchant&background=2563EB&color=fff",
-                    contentDescription = "Profile",
-                    modifier = Modifier.fillMaxSize()
+                Icon(
+                    imageVector = Icons.Filled.Person,
+                    contentDescription = "Person Icon"
                 )
             }
         }
@@ -423,12 +410,11 @@ fun InventoryItemCard(
     onDelete: () -> Unit,
 ) {
     val isLowStock = item.stockUnits <= 5
-    var expanded by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
+        color = if (item.isAvailable) Color.White else Color(0xFFF8F9FA),
         shadowElevation = 1.dp
     ) {
         Row(
@@ -458,11 +444,11 @@ fun InventoryItemCard(
                         text = item.name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = Color(0xFF1A1C1E)
+                        color = if (item.isAvailable) Color(0xFF1A1C1E) else Color.Gray
                     )
                     Text(
                         text = String.format(Locale.getDefault(), "KSh %,.2f", item.price),
-                        color = PrimaryBlue,
+                        color = if (item.isAvailable) PrimaryBlue else Color.Gray,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -472,11 +458,11 @@ fun InventoryItemCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "Stock: ${item.stockUnits} units",
-                        color = if (isLowStock) Color.Red else Color.Gray,
+                        color = if (isLowStock && item.isAvailable) Color.Red else Color.Gray,
                         fontSize = 12.sp,
                         fontWeight = if (isLowStock) FontWeight.Bold else FontWeight.Normal
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
                             .background(
@@ -487,7 +473,7 @@ fun InventoryItemCard(
                                 },
                                 shape = RoundedCornerShape(6.dp)
                             )
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = item.category,
@@ -503,35 +489,62 @@ fun InventoryItemCard(
                 }
             }
 
-            IconButton(onClick = { expanded = true }) {
-                Icon(
-                    Icons.Default.Menu,
-                    contentDescription = "Edit",
-                    tint = Color.LightGray,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            Spacer(modifier = Modifier.width(12.dp))
 
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
+            // Modern Action Cluster (Edit & Availability Status Pill)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                DropdownMenuItem(
-                    text = { Text("Delete") },
+                // Edit Stock Button
+                Surface(
                     onClick = {
-                        expanded = false
-                        onDelete()
-                        onAction("delete")
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Edit") },
-                    onClick = {
-                        expanded = false
                         onEdit()
                         onAction("edit")
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    color = PrimaryBlueLight,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Stock",
+                            tint = PrimaryBlue,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
-                )
+                }
+
+                // Availability Status Toggle Pill
+                Surface(
+                    onClick = {
+                        onDelete()
+                        onAction("toggle")
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (item.isAvailable) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
+                    modifier = Modifier.height(38.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(if (item.isAvailable) Color(0xFF2E7D32) else Color(0xFFC62828))
+                        )
+                        Text(
+                            text = if (item.isAvailable) "Active" else "Paused",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (item.isAvailable) Color(0xFF2E7D32) else Color(0xFFC62828)
+                        )
+                    }
+                }
             }
         }
     }
