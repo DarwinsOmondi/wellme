@@ -11,5 +11,6 @@ data class MerchantItem(
     val category: String,
     val description: String? = null,
     val imageUrl: String? = null,
-    val merchantId: String
+    val merchantId: String,
+    val isAvailable: Boolean = true
 )

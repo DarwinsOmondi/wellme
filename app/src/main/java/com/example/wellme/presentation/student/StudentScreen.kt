@@ -100,13 +100,13 @@ fun StudentContent(
     val balanceKsh = wallet?.let { it.balanceInCents / 100.0 } ?: 0.0
 
     val initials = remember(studentKyc?.studentName) {
-        val name = studentKyc?.studentName ?: ""
+        val name = studentKyc?.studentName?.trim() ?: ""
         if (name.isBlank()) ".."
-        else name.split(" ")
-            .filter { it.isNotBlank() }
-            .take(2)
-            .map { it.first().uppercase() }
-            .joinToString("")
+        else {
+            val parts = name.split("\\s+".toRegex()).filter { it.isNotBlank() }
+            if (parts.isEmpty()) ".."
+            else parts.take(2).mapNotNull { it.firstOrNull()?.uppercaseChar()?.toString() }.joinToString("").ifBlank { ".." }
+        }
     }
 
     PullToRefreshBox(
@@ -499,7 +499,7 @@ fun StudentBalanceCard(
 fun TransactionItem(transaction: Transaction) {
     val dateFormat = remember { SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()) }
     val timeString = dateFormat.format(Date(transaction.timestamp))
-    val isTopUp = transaction.type == TransactionType.STIPEND || transaction.merchantId == "mpesa"
+    val isTopUp = transaction.type == TransactionType.DEPOSIT || transaction.type == TransactionType.WALLET_TOPUP || transaction.merchantId == "mpesa"
 
     Surface(
         modifier = Modifier.fillMaxWidth(),

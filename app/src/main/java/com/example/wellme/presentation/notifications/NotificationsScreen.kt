@@ -58,7 +58,7 @@ fun NotificationsScreen(
         dbTransactions
             .filter { it.transactionId !in dismissedIds }
             .map { tx ->
-                val isTopUp = tx.type == TransactionType.STIPEND || tx.merchantId == "mpesa"
+                val isTopUp = tx.type == TransactionType.DEPOSIT || tx.type == TransactionType.WALLET_TOPUP || tx.merchantId == "mpesa"
                 CampusNotification(
                     id = tx.transactionId,
                     title = if (isTopUp) "M-Pesa Wallet Top Up" else "Vendor Payment",

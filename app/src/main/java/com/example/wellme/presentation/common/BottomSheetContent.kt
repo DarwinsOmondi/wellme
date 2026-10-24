@@ -20,10 +20,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wellme.R
+import com.example.wellme.domain.model.TransactionType
 import com.example.wellme.presentation.student.SheetState
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.WellMeTheme
 import com.example.wellme.util.ErrorMapper
+import java.util.Locale
 
 @SuppressLint("DefaultLocale")
 @Composable
@@ -82,6 +84,7 @@ fun BottomSheetContent(
                 }
                 
                 is SheetState.Success -> {
+                    val isDeposit = state.transaction.type == TransactionType.DEPOSIT || state.transaction.type == TransactionType.WALLET_TOPUP || state.transaction.merchantId == "mpesa"
                     Icon(
                         painter = painterResource(id = R.drawable.ic_verified),
                         contentDescription = null,
@@ -89,10 +92,20 @@ fun BottomSheetContent(
                         modifier = Modifier.size(64.dp)
                     )
                     Text(
-                        text = "Payment Complete!",
+                        text = if (isDeposit) "Deposit Successful!" else "Payment Complete!",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 16.dp)
+                    )
+                    Text(
+                        text = if (isDeposit) 
+                            String.format(Locale.getDefault(), "KSh %,.2f added to your wallet.", state.transaction.amountInCents / 100.0)
+                        else
+                            String.format(Locale.getDefault(), "KSh %,.2f paid successfully.", state.transaction.amountInCents / 100.0),
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp)
                     )
                     Button(
                         onClick = onDismiss,

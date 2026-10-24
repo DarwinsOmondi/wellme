@@ -13,7 +13,8 @@ data class MerchantItemDto(
     @SerialName("category") val category: String,
     @SerialName("description") val description: String? = null,
     @SerialName("image_url") val imageUrl: String? = null,
-    @SerialName("merchant_id") val merchantId: String
+    @SerialName("merchant_id") val merchantId: String,
+    @SerialName("is_available") val isAvailable: Boolean? = true
 ) {
     fun toDomain() = MerchantItem(
         id = id ?: "",
@@ -23,7 +24,8 @@ data class MerchantItemDto(
         category = category,
         description = description,
         imageUrl = imageUrl,
-        merchantId = merchantId
+        merchantId = merchantId,
+        isAvailable = isAvailable ?: true
     )
 
     companion object {
@@ -35,7 +37,8 @@ data class MerchantItemDto(
             category = domain.category,
             description = domain.description,
             imageUrl = domain.imageUrl,
-            merchantId = domain.merchantId
+            merchantId = domain.merchantId,
+            isAvailable = domain.isAvailable
         )
     }
 }

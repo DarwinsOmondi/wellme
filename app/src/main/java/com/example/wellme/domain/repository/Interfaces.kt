@@ -47,6 +47,7 @@ interface MerchantRepository {
 interface MerchantInventoryRepository {
     fun getInventory(merchantId: String): Flow<List<MerchantItem>>
     suspend fun upsertItem(item: MerchantItem): Result<String>
-    suspend fun deleteItem(itemId: String): Result<Boolean>
+    suspend fun discontinueItem(itemId: String): Result<Boolean>
+    suspend fun setItemAvailability(itemId: String, available: Boolean): Result<Unit>
     suspend fun updateStock(itemId: String, newStock: Int): Result<Int>
 }

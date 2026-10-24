@@ -45,8 +45,17 @@ object ErrorMapper {
                 "Please enter a valid KSh deposit amount (minimum KSh 1.00)."
             lower.contains("phone_number") || lower.contains("invalid phone") ->
                 "Please enter a valid M-Pesa phone number (e.g. 254712345678)."
-            lower.contains("insufficient") || lower.contains("balance") ->
-                "Insufficient balance in your wallet."
+            lower.contains("deposit") || lower.contains("top-up") || lower.contains("topup") || lower.contains("stk") || lower.contains("initiate") -> {
+                when {
+                    lower.contains("insufficient") || lower.contains("fund") || lower.contains("balance") ->
+                        "Insufficient M-Pesa account balance for deposit."
+                    lower.contains("cancel") || lower.contains("failed") ->
+                        "M-Pesa deposit was cancelled or failed."
+                    else -> "M-Pesa deposit failed. Please try again."
+                }
+            }
+            (lower.contains("insufficient") || lower.contains("not enough")) && (lower.contains("balance") || lower.contains("fund") || lower.contains("wallet")) ->
+                "Insufficient balance in your student wallet."
             lower.contains("failed or was cancelled") || lower.contains("cancelled") || lower.contains("canceled") ->
                 "M-Pesa payment was cancelled or timed out. Please try again."
             lower.contains("timeout") || lower.contains("timed out") ->

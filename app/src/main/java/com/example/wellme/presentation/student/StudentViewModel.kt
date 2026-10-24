@@ -62,7 +62,7 @@ class StudentViewModel @Inject constructor(
     val studentId: String = authRepository.getCurrentUser()?.id ?: ""
 
     private val _refreshTrigger = MutableStateFlow(0)
-    private val _observeRealtime = MutableStateFlow(false)
+    private val _observeRealtime = MutableStateFlow(true)
 
     val wallet: StateFlow<StudentWallet?> =
         combine(_refreshTrigger, _observeRealtime) { _, observe -> observe }
@@ -180,7 +180,7 @@ class StudentViewModel @Inject constructor(
                     originalAmountInCents = checkoutResult.subtotalInCents,
                     discountAppliedInCents = checkoutResult.discountInCents,
                     timestamp = System.currentTimeMillis(),
-                    type = TransactionType.PAYMENT,
+                    type = TransactionType.PURCHASE,
                     merchantId = currentState.merchant.merchantId,
                     studentId = studentId
                 )
@@ -197,30 +197,42 @@ class StudentViewModel @Inject constructor(
     fun observePendingCheckout(checkoutRequestId: String) {
         pendingJob?.cancel()
         pendingJob = viewModelScope.launch {
-            walletRepository.observePendingPayment(checkoutRequestId)
-                .collect { pending ->
-                    Log.d(TAG, "Observed pending payment status: ${pending.status}")
-                    if (pending.status.equals("SUCCESS", ignoreCase = true)) {
-                        clearTopUpIdempotencyKey()
-                        _sheetState.value = SheetState.Success(
-                            Transaction(
-                                transactionId = pending.checkoutRequestId,
-                                amountInCents = pending.amountInCents,
-                                originalAmountInCents = pending.amountInCents,
-                                discountAppliedInCents = 0L,
-                                timestamp = System.currentTimeMillis(),
-                                type = TransactionType.STIPEND,
-                                merchantId = "mpesa",
-                                studentId = studentId
-                            )
+            var attempts = 0
+            val depositAmount = currentTopUpKeyContext?.amountInCents ?: 0L
+            while (attempts < 30) {
+                val statusResult = walletRepository.getPaymentAttemptStatus(checkoutRequestId)
+                val status = statusResult.getOrNull()?.uppercase()
+                Log.d(TAG, "Polled payment_attempt $checkoutRequestId status: $status")
+
+                if (status == "SUCCESS" || status == "COMPLETED") {
+                    clearTopUpIdempotencyKey()
+                    refreshWallet()
+                    _sheetState.value = SheetState.Success(
+                        Transaction(
+                            transactionId = checkoutRequestId,
+                            amountInCents = depositAmount,
+                            originalAmountInCents = depositAmount,
+                            discountAppliedInCents = 0L,
+                            timestamp = System.currentTimeMillis(),
+                            type = TransactionType.DEPOSIT,
+                            merchantId = "mpesa",
+                            studentId = studentId
                         )
-                        refreshWallet()
-                    } else if (pending.status.equals("FAILED", ignoreCase = true)) {
-                        clearTopUpIdempotencyKey()
-                        _sheetState.value =
-                            SheetState.Error("M-Pesa payment failed or was cancelled.")
-                    }
+                    )
+                    break
+                } else if (status == "FAILED" || status == "CANCELLED") {
+                    clearTopUpIdempotencyKey()
+                    _sheetState.value =
+                        SheetState.Error("M-Pesa payment failed or was cancelled.")
+                    break
                 }
+
+                kotlinx.coroutines.delay(2000L)
+                attempts++
+            }
+            if (_sheetState.value is SheetState.Pending && attempts >= 30) {
+                _sheetState.value = SheetState.Error("Deposit response timed out. Check your wallet balance shortly.")
+            }
         }
     }
 

@@ -32,6 +32,7 @@ class MerchantRepositoryImpl @Inject constructor(
         return merchantDao.getMerchantFlow(merchantId)
             .onStart {
                 Log.d(TAG, "Refreshing merchant: $merchantId")
+                Log.d(TAG, "The current merchant is ${merchantDao.getMerchantFlow(merchantId)}")
                 refreshMerchant(merchantId)
             }
             .map {
@@ -115,6 +116,14 @@ class MerchantRepositoryImpl @Inject constructor(
         Log.d(TAG, "Updating merchant target for $merchantId to $targetInCents")
         try {
             merchantDao.updateMerchantTarget(merchantId, targetInCents)
+            postgrest["merchants"]
+                .update(
+                    mapOf("pool_target_in_cents" to targetInCents)
+                ) {
+                    filter {
+                        eq("merchant_id", merchantId)
+                    }
+                }
         } catch (e: Exception) {
             Log.e(TAG, "Error updating merchant target", e)
         }
