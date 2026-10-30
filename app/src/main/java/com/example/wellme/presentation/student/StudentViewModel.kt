@@ -74,6 +74,26 @@ class StudentViewModel @Inject constructor(
     val transactions: StateFlow<List<Transaction>> = walletRepository.getTransactions()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    companion object {
+        private val _readIds = MutableStateFlow<Set<String>>(emptySet())
+        val readIds: StateFlow<Set<String>> = _readIds.asStateFlow()
+
+        private val _dismissedIds = MutableStateFlow<Set<String>>(emptySet())
+        val dismissedIds: StateFlow<Set<String>> = _dismissedIds.asStateFlow()
+    }
+
+    fun markAsRead(id: String) {
+        _readIds.value += id
+    }
+
+    fun markAllAsRead(ids: List<String>) {
+        _readIds.value += ids
+    }
+
+    fun dismissNotification(id: String) {
+        _dismissedIds.value += id
+    }
+
     private val _sheetState = MutableStateFlow<SheetState>(SheetState.Idle)
     val sheetState: StateFlow<SheetState> = _sheetState.asStateFlow()
 

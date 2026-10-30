@@ -7,13 +7,15 @@ import androidx.room.RoomDatabase
     entities = [
         StudentWalletEntity::class,
         MerchantEntity::class,
-        TransactionEntity::class
+        TransactionEntity::class,
+        SecuritySettingsEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class WellMeDatabase : RoomDatabase() {
     abstract fun walletDao(): WalletDao
     abstract fun merchantDao(): MerchantDao
     abstract fun transactionDao(): TransactionDao
+    abstract fun securityDao(): SecurityDao
 }

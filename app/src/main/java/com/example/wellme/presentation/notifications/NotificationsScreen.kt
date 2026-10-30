@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -26,6 +27,7 @@ import com.example.wellme.domain.model.TransactionType
 import com.example.wellme.presentation.student.StudentViewModel
 import com.example.wellme.theme.PrimaryBlue
 import com.example.wellme.theme.PrimaryBlueLight
+import com.example.wellme.theme.WellMeTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -49,10 +51,9 @@ fun NotificationsScreen(
     onBack: () -> Unit
 ) {
     val dbTransactions by viewModel.transactions.collectAsState()
+    val readIds by StudentViewModel.readIds.collectAsState()
+    val dismissedIds by StudentViewModel.dismissedIds.collectAsState()
     val dateFormat = remember { SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault()) }
-
-    var dismissedIds by remember { mutableStateOf(setOf<String>()) }
-    var readIds by remember { mutableStateOf(setOf<String>()) }
 
     val notificationsList = remember(dbTransactions, dismissedIds, readIds) {
         dbTransactions
@@ -86,7 +87,7 @@ fun NotificationsScreen(
                     if (notificationsList.isNotEmpty()) {
                         TextButton(
                             onClick = {
-                                readIds = readIds + notificationsList.map { it.id }
+                                viewModel.markAllAsRead(notificationsList.map { it.id })
                             }
                         ) {
                             Text("Mark all as read", color = PrimaryBlue, fontWeight = FontWeight.Bold)
@@ -128,10 +129,10 @@ fun NotificationsScreen(
                         NotificationCard(
                             notification = item,
                             onClick = {
-                                readIds = readIds + item.id
+                                viewModel.markAsRead(item.id)
                             },
                             onDismiss = {
-                                dismissedIds = dismissedIds + item.id
+                                viewModel.dismissNotification(item.id)
                             }
                         )
                     }
@@ -227,6 +228,27 @@ fun NotificationCard(
                     modifier = Modifier.size(18.dp)
                 )
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun NotificationCardPreview() {
+    WellMeTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            NotificationCard(
+                notification = CampusNotification(
+                    id = "1",
+                    title = "M-Pesa Wallet Top Up",
+                    subtitle = "KSh 500 deposited to your student wallet.",
+                    timestamp = "May 20, 10:30 AM",
+                    type = NotificationType.TOP_UP,
+                    isRead = false
+                ),
+                onClick = {},
+                onDismiss = {}
+            )
         }
     }
 }

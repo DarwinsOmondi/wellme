@@ -217,6 +217,8 @@ class KycRepositoryImpl @Inject constructor(
         return try {
             postgrest.from("merchant_kyc").update({
                 set("business_name", businessName)
+                set("till_number", tillNumber)
+                set("mpesa_phone_number", mpesaPhone)
             }) {
                 filter { eq("id", userId) }
             }

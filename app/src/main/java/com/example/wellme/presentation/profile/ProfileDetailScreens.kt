@@ -18,6 +18,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wellme.theme.PrimaryBlue
+import com.example.wellme.theme.WellMeTheme
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.wellme.presentation.security.SecurityViewModel
+import com.example.wellme.util.BiometricAuthManager
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,10 +86,10 @@ fun PersonalDetailsScreen(
                                             campusEmailInput = it.campusEmail
                                             phoneInput = it.phoneNumber
                                         }
-                                        uiState.profile.merchantKyc?.let {
+                                        uiState.profile. merchantKyc?.let {
                                             businessNameInput = it.businessName
-                                            tillNumberInput = "174379"
-                                            mpesaPhoneInput = "254712345678"
+                                            tillNumberInput = it.tillNumber ?: "174379"
+                                            mpesaPhoneInput = it.mpesaPhoneNumber ?: ""
                                         }
                                         isEditing = true
                                     }
@@ -168,6 +174,8 @@ fun PersonalDetailsScreen(
                         } else {
                             InfoCard(title = "Business Name", value = merchantKyc.businessName)
                             InfoCard(title = "National ID", value = merchantKyc.nationalIdNumber)
+                            InfoCard(title = "M-Pesa Till / Paybill", value = merchantKyc.tillNumber ?: "174379")
+                            InfoCard(title = "M-Pesa Phone Number", value = merchantKyc.mpesaPhoneNumber ?: "Not set")
                             InfoCard(title = "Account Status", value = "Verified Merchant")
                         }
                     }
@@ -200,9 +208,16 @@ fun InfoCard(title: String, value: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SecuritySettingsScreen(onBack: () -> Unit) {
+fun SecuritySettingsScreen(
+    securityViewModel: SecurityViewModel = hiltViewModel(),
+    onBack: () -> Unit
+) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val isBiometricEnabled by securityViewModel.isBiometricEnabled.collectAsState()
+    val isWalletLocked by securityViewModel.isWalletLocked.collectAsState()
+    val isSensitiveDataLocked by securityViewModel.isSensitiveDataLocked.collectAsState()
+    val context = LocalContext.current
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -239,10 +254,49 @@ fun SecuritySettingsScreen(onBack: () -> Unit) {
             DetailOptionItem(
                 icon = Icons.Default.Fingerprint,
                 title = "Biometric Authentication",
-                subtitle = "Use fingerprint or face ID to login",
+                subtitle = "Use fingerprint or face ID to secure wallet & confidential data",
                 hasSwitch = true,
-                checked = true,
-                onClick = {}
+                checked = isBiometricEnabled,
+                onClick = {
+                    val newState = !isBiometricEnabled
+                    if (newState) {
+                        BiometricAuthManager.authenticate(
+                            context = context,
+                            title = "Enable Biometric Security",
+                            subtitle = "Verify identity to enable biometric protection",
+                            onSuccess = {
+                                securityViewModel.setBiometricEnabled(true)
+                                scope.launch { snackbarHostState.showSnackbar("Biometric authentication enabled.") }
+                            },
+                            onError = { err ->
+                                scope.launch { snackbarHostState.showSnackbar("Authentication failed: $err") }
+                            }
+                        )
+                    } else {
+                        securityViewModel.setBiometricEnabled(false)
+                        scope.launch { snackbarHostState.showSnackbar("Biometric authentication disabled.") }
+                    }
+                }
+            )
+            DetailOptionItem(
+                icon = Icons.Default.VpnKey,
+                title = "Unlock Wallet & Confidential Data",
+                subtitle = "Wallet: ${if (isWalletLocked) "Locked" else "Unlocked"} | Data: ${if (isSensitiveDataLocked) "Locked" else "Unlocked"}",
+                onClick = {
+                    BiometricAuthManager.authenticate(
+                        context = context,
+                        title = "Unlock Secure Area",
+                        subtitle = "Verify fingerprint or PIN to unlock",
+                        onSuccess = {
+                            securityViewModel.unlockWallet()
+                            securityViewModel.unlockSensitiveData()
+                            scope.launch { snackbarHostState.showSnackbar("Wallet and confidential data unlocked.") }
+                        },
+                        onError = { err ->
+                            scope.launch { snackbarHostState.showSnackbar("Authentication failed: $err") }
+                        }
+                    )
+                }
             )
             DetailOptionItem(
                 icon = Icons.Default.Devices,
@@ -258,7 +312,7 @@ fun SecuritySettingsScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(
-                text = "Security settings are managed by Supabase Auth.", 
+                text = "Security settings are managed by Supabase Auth & Android Biometric Prompt.", 
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.Gray,
                 textAlign = TextAlign.Center,
@@ -461,10 +515,9 @@ fun DetailOptionItem(
             }
             
             if (hasSwitch) {
-                var isChecked by remember { mutableStateOf(checked) }
                 Switch(
-                    checked = isChecked,
-                    onCheckedChange = { isChecked = it },
+                    checked = checked,
+                    onCheckedChange = { _ -> onClick() },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
                         checkedTrackColor = PrimaryBlue,
@@ -480,5 +533,26 @@ fun DetailOptionItem(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun InfoCardPreview() {
+    WellMeTheme {
+        InfoCard(
+            title = "Full Name",
+            value = "John Doe"
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SecuritySettingsScreenPreview() {
+    WellMeTheme {
+        SecuritySettingsScreen(
+            onBack = {}
+        )
     }
 }

@@ -40,6 +40,10 @@ import com.example.wellme.theme.PrimaryBlueDark
 import com.example.wellme.theme.PrimaryBlueLight
 import com.example.wellme.theme.WellMeTheme
 import com.example.wellme.util.GuestSession
+import com.example.wellme.presentation.security.SecurityViewModel
+import com.example.wellme.util.BiometricAuthManager
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.platform.LocalContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -47,6 +51,7 @@ import java.util.*
 @Composable
 fun StudentScreen(
     viewModel: StudentViewModel,
+    securityViewModel: SecurityViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
     onProfileClick: () -> Unit = {},
     onDiscoverClick: () -> Unit = {},
@@ -57,6 +62,8 @@ fun StudentScreen(
     val sheetState by viewModel.sheetState.collectAsState()
     val studentKyc by viewModel.studentKyc.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val isWalletLocked by securityViewModel.isWalletLocked.collectAsState()
+    val context = LocalContext.current
 
     StudentContent(
         wallet = wallet,
@@ -64,6 +71,16 @@ fun StudentScreen(
         sheetState = sheetState,
         studentKyc = studentKyc,
         isRefreshing = isRefreshing,
+        isWalletLocked = isWalletLocked,
+        onUnlockWallet = {
+            BiometricAuthManager.authenticate(
+                context = context,
+                title = "Unlock Wallet",
+                subtitle = "Verify fingerprint or PIN to view balance",
+                onSuccess = { securityViewModel.unlockWallet() },
+                onError = {}
+            )
+        },
         onDeposit = { amount, phone -> viewModel.initiateDeposit(amount, phone) },
         onRefresh = { viewModel.refreshWallet() },
         onDismissSheet = { viewModel.resetScanner() },
@@ -82,6 +99,8 @@ fun StudentContent(
     sheetState: SheetState,
     studentKyc: com.example.wellme.data.remote.model.StudentKyc?,
     isRefreshing: Boolean = false,
+    isWalletLocked: Boolean = false,
+    onUnlockWallet: () -> Unit = {},
     onDeposit: (Double, String) -> Unit,
     onRefresh: () -> Unit,
     onDismissSheet: () -> Unit = {},
@@ -135,6 +154,8 @@ fun StudentContent(
             StudentBalanceCard(
                 balanceKsh = balanceKsh,
                 modifier = Modifier.padding(horizontal = 20.dp),
+                isWalletLocked = isWalletLocked,
+                onUnlockWallet = onUnlockWallet,
                 onDepositClick = {
                     if (isGuest) showAuthRequiredDialog = true
                     else showDepositDialog = true
@@ -376,6 +397,8 @@ fun StudentHeader(
 fun StudentBalanceCard(
     balanceKsh: Double,
     modifier: Modifier = Modifier,
+    isWalletLocked: Boolean = false,
+    onUnlockWallet: () -> Unit = {},
     onDepositClick: () -> Unit,
     onDiscoverClick: () -> Unit,
     onQuickActionsClick: () -> Unit
@@ -396,12 +419,35 @@ fun StudentBalanceCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Available Balance",
-                    color = Color.White.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Available Balance",
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (isWalletLocked) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Color.Red.copy(alpha = 0.8f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(text = "LOCKED", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
 
                 Surface(
                     onClick = onQuickActionsClick,
@@ -431,14 +477,50 @@ fun StudentBalanceCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
-                text = String.format(Locale.getDefault(), "KSh %,.2f", balanceKsh),
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.ExtraBold
-                ),
-                color = Color.White
-            )
+            if (isWalletLocked) {
+                Surface(
+                    onClick = onUnlockWallet,
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White.copy(alpha = 0.2f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Fingerprint,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Unlock Wallet",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
+                            )
+                            Text(
+                                text = "Tap with fingerprint or PIN",
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    text = String.format(Locale.getDefault(), "KSh %,.2f", balanceKsh),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    ),
+                    color = Color.White
+                )
+            }
 
             Spacer(modifier = Modifier.height(28.dp))
 

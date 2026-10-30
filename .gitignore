@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+*.docx
+convert_to_docx.py
+
