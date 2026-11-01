@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation("androidx.biometric:biometric:1.1.0")
 
     // Arch Components
     implementation(libs.androidx.lifecycle.runtime.compose)

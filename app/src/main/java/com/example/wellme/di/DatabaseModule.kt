@@ -6,6 +6,7 @@ import com.example.wellme.data.local.WellMeDatabase
 import com.example.wellme.data.local.WalletDao
 import com.example.wellme.data.local.MerchantDao
 import com.example.wellme.data.local.TransactionDao
+import com.example.wellme.data.local.SecurityDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,7 +28,7 @@ object DatabaseModule {
             WellMeDatabase::class.java,
             "wellme_database"
         )
-            .fallbackToDestructiveMigration(false)
+            .fallbackToDestructiveMigration(true)
         .build()
     }
 
@@ -44,5 +45,10 @@ object DatabaseModule {
     @Provides
     fun provideTransactionDao(database: WellMeDatabase): TransactionDao {
         return database.transactionDao()
+    }
+
+    @Provides
+    fun provideSecurityDao(database: WellMeDatabase): SecurityDao {
+        return database.securityDao()
     }
 }

@@ -93,3 +93,10 @@ data class TransactionEntity(
         )
     }
 }
+
+@Entity(tableName = "security_settings")
+data class SecuritySettingsEntity(
+    @PrimaryKey val id: Int = 1,
+    val isBiometricEnabled: Boolean
+)
+

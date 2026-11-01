@@ -47,3 +47,13 @@ interface TransactionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTransaction(transaction: TransactionEntity)
 }
+
+@Dao
+interface SecurityDao {
+    @Query("SELECT * FROM security_settings WHERE id = 1")
+    fun getSecuritySettingsFlow(): Flow<SecuritySettingsEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSecuritySettings(settings: SecuritySettingsEntity)
+}
+

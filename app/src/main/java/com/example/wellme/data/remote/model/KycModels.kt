@@ -30,5 +30,7 @@ data class MerchantKyc(
     @SerialName("registration_cert_url") val registrationCertUrl: String? = null,
     @SerialName("business_permit_url") val businessPermitUrl: String? = null,
     @SerialName("mpesa_till_doc_url") val mpesaTillDocUrl: String? = null,
-    @SerialName("avatar_url") val avatarUrl: String? = null
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("till_number") val tillNumber: String? = null,
+    @SerialName("mpesa_phone_number") val mpesaPhoneNumber: String? = null
 )
